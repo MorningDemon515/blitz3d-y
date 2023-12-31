@@ -16,6 +16,8 @@ using namespace std;
 
 #include "../bbruntime/bbruntime.h"
 
+#include "../gxruntime/gxutf8.h"
+
 class DummyDebugger : public Debugger{
 public:
 	virtual void debugRun(){}
@@ -25,7 +27,7 @@ public:
 	virtual void debugLeave(){}
 	virtual void debugLog( const char *msg ){}
 	virtual void debugMsg( const char *e,bool serious ){
-		if( serious ) MessageBox( 0,e,"Error!",MB_OK|MB_TOPMOST|MB_SETFOREGROUND );
+		if( serious ) MessageBoxW( 0,UTF8::convertToUtf16(e).c_str(),L"Error!",MB_OK|MB_TOPMOST|MB_SETFOREGROUND );
 	}
 	virtual void debugSys( void *msg ){}
 };

@@ -1,4 +1,4 @@
-
+﻿
 #include "stdafx.h"
 #include "resource.h"
 #include "mainframe.h"
@@ -109,7 +109,7 @@ MainFrame::MainFrame():exit_flag(false){
 
 int MainFrame::OnCreate( LPCREATESTRUCT lpCreateStruct ){
 	CFrameWnd::OnCreate( lpCreateStruct );
-	
+
 	this->DragAcceptFiles(TRUE);
 
 	static HBITMAP toolbmp;

@@ -3,6 +3,8 @@
 #include "gxruntime.h"
 #include "zmouse.h"
 
+#include "../gxruntime/gxutf8.h"
+
 #define SPI_SETMOUSESPEED	113
 
 struct gxRuntime::GfxMode{
