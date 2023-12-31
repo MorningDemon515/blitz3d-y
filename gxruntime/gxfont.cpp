@@ -1,294 +1,259 @@
-
 #include "std.h"
 #include "gxfont.h"
 
 #include "gxcanvas.h"
 #include "gxgraphics.h"
-
 #include "gxutf8.h"
 
 #include <inttypes.h>
 #include <stdlib.h>
 #include <stdio.h>
 
-gxFont::gxFont(FT_Library ftLibrary, gxGraphics *gfx, const std::string& fn, int h, int flgs) {
-    graphics = gfx;
-    filename = fn;
-    height = h;
+gxFont::gxFont(FT_Library ftLibrary, gxGraphics* gfx, const std::string& fn, int h) {
+	graphics = gfx;
+	filename = fn;
+	height = h;
 
-    flags = flgs;
+	FT_New_Face(ftLibrary,
+		filename.c_str(),
+		0,
+		&freeTypeFace);
 
-    FT_New_Face(ftLibrary,
-                filename.c_str(),
-                0,
-                &freeTypeFace);
+	FT_Set_Pixel_Sizes(freeTypeFace,
+		0,
+		height);
 
-    FT_Set_Pixel_Sizes(freeTypeFace,
-                       0,
-                       height);
+	glyphData.clear();
+	atlases.clear();
 
-    freeTypeFace->style_flags = (flgs & FONT_BOLD ? FT_STYLE_FLAG_BOLD : 0) |
-                                (flgs & FONT_ITALIC ? FT_STYLE_FLAG_ITALIC : 0);
+	glyphHeight = height;
+	renderAtlas('T');
+	std::map<int, GlyphData>::iterator it = glyphData.find('T');
+	if(it != glyphData.end()) {
+		const GlyphData& gd = it->second;
 
-    glyphData.clear();
-    atlases.clear();
+		glyphHeight = gd.srcRect[3];
+		glyphRenderOffset = -gd.drawOffset[1];
+	}
 
-    renderAtlas(0);
+	tCanvasHeight = (glyphHeight * 40) / 10;
+	glyphRenderBaseline = (glyphHeight * 3 / 10);
+	glyphRenderOffset += glyphRenderBaseline;
 
-    tempCanvas = nullptr;
+	tempCanvas = nullptr;
 }
 
 gxFont::~gxFont() {
-    for (int i=0;i<atlases.size();i++) {
-        graphics->freeCanvas(atlases[i]);
-    }
+	for(int i = 0; i < atlases.size(); i++) {
+		graphics->freeCanvas(atlases[i]);
+	}
 
-    FT_Done_Face(freeTypeFace);
+	FT_Done_Face(freeTypeFace);
 }
 
-static unsigned char* unpack_mono_bitmap(FT_Bitmap bitmap)
-{
-    unsigned char* result;
-    int y, x, byte_index, num_bits_done, rowstart, bits, bit_index;
-    unsigned char byte_value;
-
-    result = new unsigned char[bitmap.rows * bitmap.width];
-
-    for (y = 0; y < bitmap.rows; y++) {
-        for (byte_index = 0; byte_index < bitmap.pitch; byte_index++) {
-
-            byte_value = bitmap.buffer[y * bitmap.pitch + byte_index];
-
-            num_bits_done = byte_index * 8;
-
-            rowstart = y * bitmap.width + byte_index * 8;
-
-            bits = 8;
-            if ((bitmap.width - num_bits_done) < 8) {
-                bits = bitmap.width - num_bits_done;
-            }
-
-            for (bit_index = 0; bit_index < bits; bit_index++) {
-                int bit;
-                bit = byte_value & (1 << (7 - bit_index));
-
-                result[rowstart + bit_index] = bit;
-            }
-        }
-    }
-
-    return result;
-}
-
-const int transparentPixel = 0x777777;
+const int transparentPixel = 0x4A412A;
 const int opaquePixel = 0xffffff;
 
 void gxFont::renderAtlas(int chr) {
-    bool needsNewAtlas = false;
+	bool needsNewAtlas = false;
 
-    int startChr = chr-1024;
-    if (startChr<0) { startChr = 0; }
-    int endChr = startChr+2048;
+	int startChr = chr - 1024;
+	if(startChr < 0) { startChr = 0; }
+	int endChr = startChr + 2048;
 
-    bool* buffer = nullptr;
-    int x = -1; int y = -1;
-    int maxHeight = -1;
-    for (int i=startChr;i<endChr;i++) {
-        std::map<int,GlyphData>::iterator it = glyphData.find(i);
-        if (it==glyphData.end()) {
-            long glyphIndex = FT_Get_Char_Index(freeTypeFace,i);
-            FT_Load_Glyph(freeTypeFace,
-                          (FT_UInt)glyphIndex,
-                          FT_LOAD_TARGET_MONO);
-            if (glyphIndex != 0) {
-                FT_Render_Glyph(freeTypeFace->glyph,
-                                FT_RENDER_MODE_MONO);
-                unsigned char* glyphBuffer = freeTypeFace->glyph->bitmap.buffer;
-                int glyphPitch = freeTypeFace->glyph->bitmap.pitch;
-                int glyphWidth = freeTypeFace->glyph->bitmap.width;
-                int glyphHeight = freeTypeFace->glyph->bitmap.rows;
+	bool* buffer = nullptr;
+	int x = -1; int y = -1;
+	int maxHeight = -1;
+	for(int i = startChr; i < endChr; i++) {
+		std::map<int, GlyphData>::iterator it = glyphData.find(i);
+		if(it == glyphData.end()) {
+			long glyphIndex = FT_Get_Char_Index(freeTypeFace, i);
+			FT_Load_Glyph(freeTypeFace,
+				(FT_UInt)glyphIndex,
+				FT_LOAD_TARGET_MONO);
+			if(glyphIndex != 0) {
+				FT_Render_Glyph(freeTypeFace->glyph,
+					FT_RENDER_MODE_MONO);
+				unsigned char* glyphBuffer = freeTypeFace->glyph->bitmap.buffer;
+				int glyphPitch = freeTypeFace->glyph->bitmap.pitch;
+				int glyphWidth = freeTypeFace->glyph->bitmap.width;
+				int glyphHeight = freeTypeFace->glyph->bitmap.rows;
 
-                if (glyphWidth>0 && glyphHeight>0) {
-                    if (buffer==nullptr) {
-                        buffer = new bool[atlasDims*atlasDims];
-                        for (int j=0;j<atlasDims*atlasDims;j++) {
-                            buffer[j]=false;
-                        }
-                        x=1; y=1; maxHeight=0;
-                    }
+				if(glyphWidth > 0 && glyphHeight > 0) {
+					if(buffer == nullptr) {
+						buffer = new bool[atlasDims * atlasDims];
+						for(int j = 0; j < atlasDims * atlasDims; j++) {
+							buffer[j] = false;
+						}
+						x = 1; y = 1; maxHeight = 0;
+					}
 
-                    if (x+glyphWidth+1>atlasDims-1) {
-                        x=1; y+=maxHeight+1;
-                        maxHeight = 0;
-                    }
-                    if (y+glyphHeight+1>atlasDims-1) {
-                        needsNewAtlas = true;
-                        break;
-                    }
-                    if (glyphHeight>maxHeight) { maxHeight = glyphHeight; }
+					if(x + glyphWidth + 1 > atlasDims - 1) {
+						x = 1; y += maxHeight + 1;
+						maxHeight = 0;
+					}
+					if(y + glyphHeight + 1 > atlasDims - 1) {
+						needsNewAtlas = true;
+						break;
+					}
+					if(glyphHeight > maxHeight) { maxHeight = glyphHeight; }
 
-                    int bitPitch = glyphPitch*8;
-                    for (int j=0;j<glyphPitch*glyphHeight;j++) {
-                        for (int k=0;k<8;k++) {
-                            if ((j*8+k)%bitPitch >= glyphWidth) { continue; }
-                            int bufferPos = x+y*atlasDims;
-                            bufferPos += (j*8+k)%bitPitch+((j/glyphPitch)*atlasDims);
-                            buffer[bufferPos]=(glyphBuffer[j]&(1<<(7-k)))>0;
-                        }
-                    }
+					int bitPitch = glyphPitch * 8;
+					for(int j = 0; j < glyphPitch * glyphHeight; j++) {
+						for(int k = 0; k < 8; k++) {
+							if((j * 8 + k) % bitPitch >= glyphWidth) { continue; }
+							int bufferPos = x + y * atlasDims;
+							bufferPos += (j * 8 + k) % bitPitch + ((j / glyphPitch) * atlasDims);
+							buffer[bufferPos] = (glyphBuffer[j] & (1 << (7 - k))) > 0;
+						}
+					}
 
-                    GlyphData gd;
-                    gd.atlasIndex = (int)atlases.size();
-                    gd.horizontalAdvance = freeTypeFace->glyph->metrics.horiAdvance>>6;
-                    gd.drawOffset[0] = -freeTypeFace->glyph->bitmap_left;
-                    gd.drawOffset[1] = freeTypeFace->glyph->bitmap_top-((height*10)/14);
-                    gd.srcRect[0] = x;
-                    gd.srcRect[1] = y;
-                    gd.srcRect[2] = glyphWidth;
-                    gd.srcRect[3] = glyphHeight;
+					GlyphData gd;
+					gd.atlasIndex = (int)atlases.size();
+					gd.horizontalAdvance = freeTypeFace->glyph->metrics.horiAdvance >> 6;
+					gd.drawOffset[0] = -freeTypeFace->glyph->bitmap_left;
+					gd.drawOffset[1] = freeTypeFace->glyph->bitmap_top - ((height * 10) / 14);
+					gd.srcRect[0] = x;
+					gd.srcRect[1] = y;
+					gd.srcRect[2] = glyphWidth;
+					gd.srcRect[3] = glyphHeight;
 
-                    if (glyphWidth > maxWidth) { maxWidth = glyphWidth; }
+					if(glyphWidth > maxWidth) { maxWidth = glyphWidth; }
 
-                    x+=glyphWidth+1;
+					x += glyphWidth + 1;
 
-                    glyphData.emplace(i,gd);
-                } else {
-                    GlyphData gd;
-                    gd.atlasIndex = -1;
-                    gd.horizontalAdvance = freeTypeFace->glyph->metrics.horiAdvance>>6;
-                    glyphData.emplace(i,gd);
-                }
-            } else {
-                GlyphData gd;
-                gd.atlasIndex = -1;
-                gd.horizontalAdvance = freeTypeFace->glyph->metrics.horiAdvance>>6;
-                glyphData.emplace(i,gd);
-            }
-        }
-    }
+					glyphData.emplace(i, gd);
+				}
+				else {
+					GlyphData gd;
+					gd.atlasIndex = -1;
+					gd.horizontalAdvance = freeTypeFace->glyph->metrics.horiAdvance >> 6;
+					glyphData.emplace(i, gd);
+				}
+			}
+			else {
+				GlyphData gd;
+				gd.atlasIndex = -1;
+				gd.horizontalAdvance = freeTypeFace->glyph->metrics.horiAdvance >> 6;
+				glyphData.emplace(i, gd);
+			}
+		}
+	}
 
-    if (buffer!=nullptr) {
-        gxCanvas* newAtlas = graphics->createCanvas(atlasDims, atlasDims, 0);
-        newAtlas->lock();
-        for (int y=0;y<atlasDims;y++) {
-            for (int x=0;x<atlasDims;x++) {
-                newAtlas->setPixelFast(x,y,buffer[x+(y*atlasDims)] ? opaquePixel : transparentPixel);
-            }
-        }
-        newAtlas->unlock();
-        newAtlas->setMask( 0xffffff );
-        newAtlas->backup();
-        atlases.push_back(newAtlas);
-        delete[] buffer;
-    }
+	if(buffer != nullptr) {
+		gxCanvas* newAtlas = graphics->createCanvas(atlasDims, atlasDims, 0);
+		newAtlas->lock();
+		for(int y = 0; y < atlasDims; y++) {
+			for(int x = 0; x < atlasDims; x++) {
+				newAtlas->setPixelFast(x, y, buffer[x + (y * atlasDims)] ? opaquePixel : transparentPixel);
+			}
+		}
+		newAtlas->unlock();
+		newAtlas->setMask(0xffffff);
+		newAtlas->backup();
+		atlases.push_back(newAtlas);
+		delete[] buffer;
+	}
 
-    if (needsNewAtlas) {
-        renderAtlas(chr);
-    }
+	if(needsNewAtlas) {
+		renderAtlas(chr);
+	}
 }
 
-void gxFont::render(gxCanvas *dest,unsigned color_argb,int x,int y,const std::string& text) {
-    int width=stringWidth( text );
-    if( tempCanvas == nullptr || width>tempCanvas->getWidth() ){
-        graphics->freeCanvas( tempCanvas );
-        tempCanvas=graphics->createCanvas( width,height*16/10,0 );
-        tempCanvas->setMask(transparentPixel);
-    }
+void gxFont::render(gxCanvas* dest, unsigned color_argb, int x, int y, const std::string& text) {
+	int width = stringWidth(text);
+	if(tempCanvas == nullptr || width > tempCanvas->getWidth()) {
+		graphics->freeCanvas(tempCanvas);
+		tempCanvas = graphics->createCanvas(width, tCanvasHeight, 0);
+		tempCanvas->setMask(transparentPixel);
+	}
 
-    if( (color_argb&0xffffff)==transparentPixel ) { color_argb++; }
-    tempCanvas->setColor( transparentPixel );
-    tempCanvas->rect( 0,0,width,height*16/10,true );
-    tempCanvas->setColor( color_argb );
+	if((color_argb & 0xffffff) == transparentPixel) { color_argb++; }
+	tempCanvas->setColor(transparentPixel);
+	tempCanvas->rect(0, 0, width, tCanvasHeight, true);
+	tempCanvas->setColor(color_argb);
 
-    int t_x = 0;
+	int t_x = 0;
 
-    for (int i=0;i<text.size();) {
-        int codepointLen = UTF8::measureCodepoint(text[i]);
-        int chr = UTF8::decodeCharacter(text.c_str(), i);
-        std::map<int,GlyphData>::iterator it = glyphData.find(chr);
-        if (it==glyphData.end()) {
-            renderAtlas(chr);
-            it = glyphData.find(chr);
-        }
+	for(int i = 0; i < text.size();) {
+		int codepointLen = UTF8::measureCodepoint(text[i]);
+		int chr = UTF8::decodeCharacter(text.c_str(), i);
+		std::map<int, GlyphData>::iterator it = glyphData.find(chr);
+		if(it == glyphData.end()) {
+			renderAtlas(chr);
+			it = glyphData.find(chr);
+		}
 
-        if (it!=glyphData.end()) {
-            const GlyphData& gd = it->second;
+		if(it != glyphData.end()) {
+			const GlyphData& gd = it->second;
 
-            if (gd.atlasIndex>=0) {
-                tempCanvas->rect( t_x - gd.drawOffset[0],(height*4/10)-gd.drawOffset[1],gd.srcRect[2],gd.srcRect[3],true );
-                tempCanvas->blit( t_x - gd.drawOffset[0],(height*4/10)-gd.drawOffset[1],atlases[gd.atlasIndex],gd.srcRect[0],gd.srcRect[1],gd.srcRect[2],gd.srcRect[3],false );
-            }
-            t_x += gd.horizontalAdvance;
-        }
-        i+=codepointLen;
-    }
+			if(gd.atlasIndex >= 0) {
+				tempCanvas->rect(t_x - gd.drawOffset[0], glyphRenderBaseline - gd.drawOffset[1], gd.srcRect[2], gd.srcRect[3], true);
+				tempCanvas->blit(t_x - gd.drawOffset[0], glyphRenderBaseline - gd.drawOffset[1], atlases[gd.atlasIndex], gd.srcRect[0], gd.srcRect[1], gd.srcRect[2], gd.srcRect[3], false);
+			}
+			t_x += gd.horizontalAdvance;
+		}
+		i += codepointLen;
+	}
 
-    std::map<int,GlyphData>::iterator it = glyphData.find('T');
-    if (it==glyphData.end()) {
-        renderAtlas('T');
-        it = glyphData.find('T');
-    }
-
-    if (it!=glyphData.end()) {
-        const GlyphData& gd = it->second;
-
-        y -= (height*4/10)-gd.drawOffset[1];
-    }
-
-    dest->blit( x,y,tempCanvas,0,0,width,height*16/10,false );
+	dest->blit(x, y - glyphRenderOffset, tempCanvas, 0, 0, width, tCanvasHeight, false);
 }
 
 int gxFont::charWidth(int chr) {
-    std::map<int, GlyphData>::iterator it = glyphData.find(chr);
-    if (it == glyphData.end()) {
-        renderAtlas(chr);
-        it = glyphData.find(chr);
-    }
-    return it->second.srcRect[2];
+	std::map<int, GlyphData>::iterator it = glyphData.find(chr);
+	if(it == glyphData.end()) {
+		renderAtlas(chr);
+		it = glyphData.find(chr);
+	}
+	return it->second.srcRect[2];
 }
 
 int gxFont::charAdvance(int chr) {
-    std::map<int, GlyphData>::iterator it = glyphData.find(chr);
-    if (it == glyphData.end()) {
-        renderAtlas(chr);
-        it = glyphData.find(chr);
-    }
-     return it != glyphData.end() ? it->second.horizontalAdvance : 0;
+	std::map<int, GlyphData>::iterator it = glyphData.find(chr);
+	if(it == glyphData.end()) {
+		renderAtlas(chr);
+		it = glyphData.find(chr);
+	}
+	return it != glyphData.end() ? it->second.horizontalAdvance : 0;
 }
 
 int gxFont::stringWidth(const std::string& text) {
-    int width = 0;
+	int width = 0;
 
-    for (int i = 0; i < text.size();) {
-        int codepointLen = UTF8::measureCodepoint(text[i]);
-        int chr = UTF8::decodeCharacter(text.c_str(), i);
-        std::map<int, GlyphData>::iterator it = glyphData.find(chr);
-        if (it == glyphData.end()) {
-            renderAtlas(chr);
-            it = glyphData.find(chr);
-        }
+	for(int i = 0; i < text.size();) {
+		int codepointLen = UTF8::measureCodepoint(text[i]);
+		int chr = UTF8::decodeCharacter(text.c_str(), i);
+		std::map<int, GlyphData>::iterator it = glyphData.find(chr);
+		if(it == glyphData.end()) {
+			renderAtlas(chr);
+			it = glyphData.find(chr);
+		}
 
-        if (it != glyphData.end()) {
-            width += it->second.horizontalAdvance;
-        }
-        i+=codepointLen;
-    }
+		if(it != glyphData.end()) {
+			width += it->second.horizontalAdvance;
+		}
+		i += codepointLen;
+	}
 
-    return width;
+	return width;
 }
 
-int gxFont::getWidth()const{
+int gxFont::getWidth()const {
 	return maxWidth;
 }
 
-int gxFont::getHeight()const{
-	return height;
+int gxFont::getHeight()const {
+	return glyphHeight;
 }
 
-int gxFont::getWidth( const std::string &text ) {
-    return stringWidth(text);
+int gxFont::getRenderOffset()const {
+	return glyphRenderOffset;
 }
 
-bool gxFont::isPrintable( int chr )const{
+int gxFont::getWidth(const std::string& text) {
+	return stringWidth(text);
+}
+
+bool gxFont::isPrintable(int chr)const {
 	return glyphData.find(chr) != glyphData.end();
 }

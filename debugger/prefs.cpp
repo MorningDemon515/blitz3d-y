@@ -1,174 +1,159 @@
 
 #include "stdafx.h"
+#include <winreg.h>
+#include <iomanip>
+#include <filesystem>
+#include "resource.h"
 #include "prefs.h"
-#include "debuggerapp.h"
-#include <fstream>
+#include "../inipp/inipp.h"
 
-#define SWAPRB(x) ( (((x)>>16)&0xff) | ((x)&0xff00) | (((x)&0xff)<<16) )
+#pragma warning(disable: 6031)
 
 Prefs prefs;
 
-void Prefs::open(){
+void Prefs::open() {
+	homeDir = getenv("blitzpath");
 
-	homeDir=getenv( "blitzpath" );
-
-	AddFontResource( (homeDir+"/cfg/blitz.fon").c_str() );
 	setDefault();
 
-	bool prg_windowed;
+	PWSTR appdataDir = NULL;
+	if(SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, NULL, &appdataDir) != S_OK) {
+		AfxMessageBox("Couldn't access the AppData folder! This is needed for the preferences file to work.\nThe IDE will use the default values.", MB_TOPMOST | MB_SETFOREGROUND | MB_ICONERROR);
+		return;
+	}
 
-	ifstream in( (homeDir+"/cfg/blitzide.prefs").c_str() );
-	if( !in.good() ) return;
-
-	while( !in.eof() ){
-		string t;in>>t;
-		if( !t.size() ) continue;
-		while( in.peek()=='\t' ) in.ignore();
-		if( t=="prg_debug" ) in>>prg_debug;
-		else if( t=="prg_lastbuild" ) getline( in,prg_lastbuild );
-		else if( t=="prg_windowed" ) in>>prg_windowed;
-		else if( t=="win_maximized" ) in>>win_maximized;
-		else if( t=="win_notoolbar" ) in>>win_notoolbar;
-		else if( t=="win_rect" ){
-			in>>win_rect.left;in>>win_rect.top;
-			in>>win_rect.right;in>>win_rect.bottom;
-		}else if( t.substr( 0,5 )=="font_" ){
-			string s;int h;in>>s;in>>h;
-			t=t.substr( 5 );
-			if( t=="editor" ){
-				font_editor=s;font_editor_height=h;
-			}else if( t=="tabs" ){
-				font_tabs=s;font_tabs_height=h;
-			}else if( t=="debug" ){
-				font_debug=s;font_debug_height=h;
-			}
-		}else if( t.substr( 0,4 )=="rgb_" ){
-			t=t.substr(4);
-			string s;in>>s;int rgb=0;
-			for( int k=0;k<s.size();++k ){
-				int n=s[k];rgb=(rgb<<4)|(n<='9'?n-'0':(n&31)+9);
-			}
-			rgb=SWAPRB(rgb);
-
-			if( t=="bkgrnd" ) rgb_bkgrnd=rgb;
-			else if( t=="string" ) rgb_string=rgb;
-			else if( t=="ident" ) rgb_ident=rgb;
-			else if( t=="keyword" ) rgb_keyword=rgb;
-			else if( t=="comment" ) rgb_comment=rgb;
-			else if( t=="digit" ) rgb_digit=rgb;
-			else if( t=="default" ) rgb_default=rgb;
-		}else if( t=="edit_tabs" ){
-			in>>edit_tabs;
-		}else if( t=="edit_blkcursor" ){
-			in>>edit_blkcursor;
-		}else if( t=="edit_backup" ){
-			in>>edit_backup;
-		}else if( t=="img_toolbar" ){
-			getline( in,img_toolbar );
-		}else if( t=="cmd_line" ){
-			getline( in,cmd_line );
-		}else if( t=="file_recent" ){
-			string l;getline( in,l );
-			if( recentFiles.size()<10 ) recentFiles.push_back( l );
-		}else{
-			string s="Unrecognized option '"+t+"' in blitzide.prefs";
-			MessageBox( 0,s.c_str(),"Error in preferences",MB_OK );
-			setDefault();
+	std::wstringstream wss;
+	wss << appdataDir << "/Blitz3D TSS/";
+	if(!std::filesystem::exists(wss.str())) {
+		if(!CreateDirectoryW(wss.str().c_str(), 0)) {
+			AfxMessageBox("Couldn't create a folder for the preferences!\nThe IDE will use the default values.", MB_TOPMOST | MB_SETFOREGROUND | MB_ICONERROR);
 			return;
 		}
 	}
-	createFonts();
-}
 
-void Prefs::close(){
+	wss << "blitzide.ini";
 
-	ofstream out( (homeDir+"cfg\\blitzide.prefs").c_str() );
-	if( !out.good() ) return;
+	std::ifstream in(wss.str().c_str(), std::ios::in);
+	if(!in.good()) return;
 
-	out<<"prg_debug\t"<<prg_debug<<endl;
-	out<<"prg_lastbuild\t"<<prg_lastbuild<<endl;
-	out<<"win_maximized\t"<<win_maximized<<endl;
-	out<<"win_notoolbar\t"<<win_notoolbar<<endl;
-	out<<"win_rect\t"<<win_rect.left<<' '<<win_rect.top<<' '<<win_rect.right<<' '<<win_rect.bottom<<endl;
-	out<<"font_editor\t"<<font_editor<<' '<<font_editor_height<<endl;
-	out<<"font_tabs\t"<<font_tabs<<' '<<font_tabs_height<<endl;
-	out<<"font_debug\t"<<font_debug<<' '<<font_debug_height<<endl;
-	out<<hex;
-	out<<"rgb_bkgrnd\t"<<SWAPRB(rgb_bkgrnd)<<endl;
-	out<<"rgb_string\t"<<SWAPRB(rgb_string)<<endl;
-	out<<"rgb_ident\t"<<SWAPRB(rgb_ident)<<endl;
-	out<<"rgb_keyword\t"<<SWAPRB(rgb_keyword)<<endl;
-	out<<"rgb_comment\t"<<SWAPRB(rgb_comment)<<endl;
-	out<<"rgb_digit\t"<<SWAPRB(rgb_digit)<<endl;
-	out<<"rgb_default\t"<<SWAPRB(rgb_default)<<endl;
-	out<<"edit_tabs\t"<<edit_tabs<<endl;
-	out<<"edit_blkcursor\t"<<edit_blkcursor<<endl;
-	out<<"edit_backup\t"<<edit_backup<<endl;
-	out<<"img_toolbar\t"<<img_toolbar<<endl;
-	out<<"cmd_line\t"<<cmd_line<<endl;
-	for( int k=0;k<recentFiles.size();++k ){
-		out<<"file_recent\t"<<recentFiles[k]<<endl;
+	in.seekg(0, std::ios::end);
+	if(in.tellg() == 0) {
+		AfxMessageBox("blitzide.ini is empty!\nDefaults will be set.", MB_TOPMOST | MB_SETFOREGROUND | MB_ICONERROR);
+		return;
 	}
-	out<<dec;
+	in.seekg(0, std::ios::beg);
 
-	RemoveFontResource( (homeDir+"cfg\\blitz.fon").c_str() );
+	inipp::Ini<char> ini;
+	ini.parse(in);
+
+	inipp::get_value(ini.sections["COMPILER"], "Debug", prg_debug);
+	inipp::get_value(ini.sections["COMPILER"], "NoLAA", prg_nolaa);
+	inipp::get_value(ini.sections["COMPILER"], "LastBuild", prg_lastbuild);
+	inipp::get_value(ini.sections["COMPILER"], "CommandLine", cmd_line);
+
+	std::string unprocessedRect;
+
+	inipp::get_value(ini.sections["WINDOW"], "Maximized", win_maximized);
+	inipp::get_value(ini.sections["WINDOW"], "NoToolbar", win_notoolbar);
+	inipp::get_value(ini.sections["WINDOW"], "WindowRect", unprocessedRect);
+
+	sscanf(unprocessedRect.c_str(), "%ld %ld %ld %ld", &win_rect.left, &win_rect.top, &win_rect.right, &win_rect.bottom);
+
+	inipp::get_value(ini.sections["FONTS"], "EditorFont", font_editor);
+	inipp::get_value(ini.sections["FONTS"], "EditorFontSize", font_editor_height);
+	inipp::get_value(ini.sections["FONTS"], "TabsFont", font_tabs);
+	inipp::get_value(ini.sections["FONTS"], "TabsFontSize", font_tabs_height);
+	inipp::get_value(ini.sections["FONTS"], "DebugFont", font_debug);
+	inipp::get_value(ini.sections["FONTS"], "DebugFontSize", font_debug_height);
+
+	std::string unprocessedBackground, unprocessedString, unprocessedIdent, unprocessedKeyword, unprocessedComment, unprocessedDigit, unprocessedDefault;
+
+	inipp::get_value(ini.sections["COLORS"], "Background", unprocessedBackground);
+	inipp::get_value(ini.sections["COLORS"], "String", unprocessedString);
+	inipp::get_value(ini.sections["COLORS"], "Ident", unprocessedIdent);
+	inipp::get_value(ini.sections["COLORS"], "Keyword", unprocessedKeyword);
+	inipp::get_value(ini.sections["COLORS"], "Comment", unprocessedComment);
+	inipp::get_value(ini.sections["COLORS"], "Digit", unprocessedDigit);
+	inipp::get_value(ini.sections["COLORS"], "Default", unprocessedDefault);
+
+	int r = 0, g = 0, b = 0;
+
+	sscanf(unprocessedBackground.c_str(), "%d %d %d", &r, &g, &b);
+	rgb_bkgrnd = RGB(r, g, b);
+	sscanf(unprocessedString.c_str(), "%d %d %d", &r, &g, &b);
+	rgb_string = RGB(r, g, b);
+	sscanf(unprocessedIdent.c_str(), "%d %d %d", &r, &g, &b);
+	rgb_ident = RGB(r, g, b);
+	sscanf(unprocessedKeyword.c_str(), "%d %d %d", &r, &g, &b);
+	rgb_keyword = RGB(r, g, b);
+	sscanf(unprocessedComment.c_str(), "%d %d %d", &r, &g, &b);
+	rgb_comment = RGB(r, g, b);
+	sscanf(unprocessedDigit.c_str(), "%d %d %d", &r, &g, &b);
+	rgb_digit = RGB(r, g, b);
+	sscanf(unprocessedDefault.c_str(), "%d %d %d", &r, &g, &b);
+	rgb_default = RGB(r, g, b);
+
+	inipp::get_value(ini.sections["EDITOR"], "TabSpaces", edit_tabs);
+	inipp::get_value(ini.sections["EDITOR"], "BackupCount", edit_backup);
+	inipp::get_value(ini.sections["EDITOR"], "ToolbarImage", img_toolbar);
+
+	std::string recentFile;
+	for(int i = 1; i < 11; i++) {
+		inipp::get_value(ini.sections["RECENT_FILES"], "File" + itoa(i), recentFile);
+		if(recentFile.size() == 0) continue;
+		recentFiles.push_back(recentFile);
+	}
+	createFonts();
+	in.close();
+	CoTaskMemFree(static_cast<void*>(appdataDir));
 }
 
-void Prefs::setDefault(){
+void Prefs::setDefault() {
+	prg_debug = true;
+	prg_nolaa = false;
 
-	prg_debug=true;
+	win_rect.left = win_rect.top = 0;
+	win_rect.right = 800; win_rect.bottom = 600;
+	win_maximized = false;
+	win_notoolbar = false;
 
-	win_rect.left=win_rect.top=0;
-	win_rect.right=640;win_rect.bottom=480;
-	win_maximized=false;
-	win_notoolbar=false;
+	font_editor = "consolas";
+	font_editor_height = 14;
+	font_debug = "consolas";
+	font_debug_height = 14;
+	font_tabs = "segoe ui";
+	font_tabs_height = 9;
 
-	font_editor="blitz";
-	font_editor_height=12;
-	font_tabs="verdana";
-	font_tabs_height=8;
-	font_debug="verdana";
-	font_debug_height=8;
+	rgb_bkgrnd = RGB(34, 85, 136);
+	rgb_string = RGB(0, 255, 102);
+	rgb_ident = RGB(255, 255, 255);
+	rgb_keyword = RGB(170, 255, 255);
+	rgb_comment = RGB(255, 238, 0);
+	rgb_digit = RGB(51, 255, 221);
+	rgb_default = RGB(238, 238, 238);
 
-#ifdef PRO
-	rgb_bkgrnd=RGB( 0x22,0x55,0x88 );
-	rgb_string=RGB( 0x00,0xff,0x66 );
-	rgb_ident=RGB( 0xff,0xff,0xff );
-	rgb_keyword=RGB( 0xaa,0xff,0xff );
-	rgb_comment=RGB( 0xff,0xee,0x00 );
-	rgb_digit=RGB( 0x33,0xff,0xdd );
-	rgb_default=RGB( 0xee,0xee,0xee );
-	rgb_unsel=RGB( 0x88,0x88,0x88 );
-#else
-	rgb_bkgrnd=RGB( 32,96,96 );
-	rgb_string=RGB( 0,255,0 );
-	rgb_ident=RGB( 255,255,255 );
-	rgb_keyword=RGB( 255,231,95 );
-	rgb_comment=RGB( 0,255,255 );
-	rgb_digit=RGB( 200,240,255 );
-	rgb_default=RGB( 255,240,200 );
-#endif
+	edit_tabs = 4;
+	edit_backup = 2;
 
-	edit_tabs=4;
-	edit_blkcursor=false;
-	edit_backup=2;
-
-	img_toolbar="toolbar.bmp";
+	img_toolbar = "toolbar.bmp";
 
 	recentFiles.clear();
 
 	createFonts();
 }
 
-void Prefs::createFonts(){
-
+void Prefs::createFonts() {
 	editFont.Detach();
 	tabsFont.Detach();
 	debugFont.Detach();
 	conFont.Detach();
 
-	editFont.CreatePointFont( font_editor_height*10,font_editor.c_str() );
-	tabsFont.CreatePointFont( font_tabs_height*10,font_tabs.c_str() );
-	debugFont.CreatePointFont( font_debug_height*10,font_debug.c_str() );
-	conFont.CreatePointFont( 80,"courier" );
+	editFont.CreatePointFont(font_editor_height * 10, font_editor.c_str());
+	tabsFont.CreatePointFont(font_tabs_height * 10, font_tabs.c_str());
+	debugFont.CreatePointFont(font_debug_height * 10, font_debug.c_str());
+	conFont.CreatePointFont(80, "courier");
+}
+
+std::string Prefs::boolToString(bool value) {
+	return value ? "true" : "false";
 }

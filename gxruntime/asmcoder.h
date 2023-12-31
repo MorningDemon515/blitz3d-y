@@ -38,9 +38,6 @@ CodeSpan(codebase,depth,amask,rmask,gmask,bmask)
 	void (__fastcall *plot)(void *pix,int argb)
 	int (__fastcall *point)(void *pix)
 	void (__fastcall *span)(void *pix,int *argb,int count)
-
-ToDo:
-
 */
 
 #ifndef ASMCODER_H
@@ -164,9 +161,6 @@ public:
 		bmsb=0;if (u=bmask) {while (u!=1) {u>>=1;bmsb++;}}
 	}
 
-// ecx=void *t pixel
-// edx=int argb
-
 	int CodePlot(void *code,int depth,int amask,int rmask,int gmask,int bmask)
 	{
 		Reset(code);
@@ -200,7 +194,6 @@ if (amask)	or		(eax,edx);				//alph
 		switch (depth)
 		{
 			case 16:store16(ebp,0,eax);break;
-//			case 24:store16(ebp,0,eax);shift(eax,-16);store8(ebp,2,eax);break;
 			case 24:store8(ebp,0,eax);shift(eax,-8);store16(ebp,1,eax);break;
 			case 32:store32(ebp,0,eax);break;
 			default:store8(ebp,0,eax);
@@ -222,7 +215,6 @@ if (amask)	or		(eax,edx);				//alph
 		switch (depth)
 		{
 			case 16:load16(eax,ecx);break;
-//			case 24:load16(eax,ecx);shift(eax,-16);load8(eax,ecx,2);break;
 			case 24:load16(eax,ecx,1);shift(eax,8);load8(eax,ecx);break;
 			case 32:load32(eax,ecx);break;
 			default:load8(eax,ecx);
@@ -258,10 +250,6 @@ if (amask)	or		(eax,edx);
 		ret();
 		return off;
 	}	
-
-// ecx=void *t pixel
-// edx=int *argb
-// 8(esp)=count
 
 	int CodeSpan(void *code,int depth,int amask,int rmask,int gmask,int bmask)
 	{

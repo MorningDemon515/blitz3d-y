@@ -2,23 +2,24 @@
 #ifndef TILE_H
 #define TILE_H
 
-enum{ EAX=1,ECX,EDX,EDI,ESI,EBX };
+enum { EAX = 1, ECX, EDX, EDI, ESI, EBX };
 
-struct Tile{
+struct Tile {
 
-	int want_l,want_r,hits,argFrame;
+	int want_l, want_r, hits, argFrame;
+	bool forceOrder;
 
-	Tile( const string &a,Tile *l=0,Tile *r=0 );
-	Tile( const string &a,const string &a2,Tile *l=0,Tile *r=0 );
+	Tile(const std::string& a, Tile* l = 0, Tile* r = 0);
+	Tile(const std::string& a, const std::string& a2, Tile* l = 0, Tile* r = 0);
 	~Tile();
 
 	void label();
-	int  eval( int want );
+	int  eval(int want);
 
 private:
 	int  need;
-	Tile *l,*r;
-	string assem,assem2;
+	Tile* l, * r;
+	std::string assem, assem2;
 
 };
 

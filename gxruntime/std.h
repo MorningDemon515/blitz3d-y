@@ -10,7 +10,6 @@
 #pragma warning( disable:4786 )
 
 #define DIRECTSOUND_VERSION 0x700
-//#define DIRECTINPUT_VERSION 0x700
 
 #include <set>
 #include <map>
@@ -21,11 +20,9 @@
 #include <iostream>
 
 #include <math.h>
-#include <windows.h>
-#include <ddraw.h>
-//#include <dinput.h>
+#include <Windows.h>
+#include <ddraw.h> // Why are we still here? Just to suffer?
 #include <d3d.h>
 
-using namespace std;
 
 #endif

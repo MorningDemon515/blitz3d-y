@@ -157,7 +157,7 @@
  */
 
 #if defined(_WIN32_WCE)
-#  include <windows.h>
+#  include <Windows.h>
    /* Console I/O functions are not supported on WindowsCE */
 #  define PNG_NO_CONSOLE_IO
 #  ifdef PNG_DEBUG

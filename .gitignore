@@ -1,8 +1,15 @@
 Debug
 Release
-blitzide.prefs
+_release/bin
+_release/cfg
+_release/temp
+_release/userlibs
+_release/Blitz3D.exe
 *.exe
 *.dll
 *.pdb
 *.ilk
+*.aps
+*.bb_bak1
 .vs
+*/objs/*

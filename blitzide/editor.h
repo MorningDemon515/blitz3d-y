@@ -5,22 +5,26 @@
 #include "tabber.h"
 #include "funclist.h"
 
+#pragma comment(linker,"\"/manifestdependency:type='win32' \
+	name='Microsoft.Windows.Common-Controls' version='6.0.0.0' \
+	processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
+
 class Editor;
 
-class EditorListener{
+class EditorListener {
 public:
-	virtual void cursorMoved( Editor *e ){}
+	virtual void cursorMoved(Editor* e) {}
 };
 
-class Editor : public CWnd,FuncListListener,TabberListener{
+class Editor : public CWnd, FuncListListener, TabberListener {
 public:
-	Editor( EditorListener *l );
+	Editor(EditorListener* l);
 	~Editor();
 
-	void setName( const string &f );
-	void setModified( bool n );
-	bool setText( istream &in );
-	void setCursor( int pos );
+	void setName(const std::string& f);
+	void setModified(bool n);
+	bool setText(std::istream& in);
+	void setCursor(int pos);
 
 	void cut();
 	void copy();
@@ -28,61 +32,61 @@ public:
 	void find();
 	void replace();
 	bool canFind();
-	bool findNext( bool wrap );
+	bool findNext(bool wrap);
 	void print();
-	void hilight( int pos );
+	void hilight(int pos);
 	void selectAll();
 
 	static void lock();
 	static void unlock();
 
 	int  getCursor();
-	string getName()const;
-	string getKeyword();
+	std::string getName()const;
+	std::string getKeyword();
 	bool getModified();
-	bool getText( ostream &out );
-	void getCursor( int *row,int *col );
+	bool getText(std::ostream& out);
+	void getCursor(int* row, int* col);
 	bool canCutCopy();
 	bool canPaste();
 
-	static void addKeyword( const string &s );
+	static void addKeyword(const std::string& s);
 
-DECLARE_DYNAMIC( Editor )
-DECLARE_MESSAGE_MAP()
+	DECLARE_DYNAMIC(Editor)
+	DECLARE_MESSAGE_MAP()
 
-	afx_msg int  OnCreate( LPCREATESTRUCT lpCreateStruct );
-	afx_msg void OnSize( UINT type,int w,int h );
-	afx_msg void OnSetFocus( CWnd *wnd );
-	afx_msg void OnKillFocus( CWnd *wnd );
+	afx_msg int  OnCreate(LPCREATESTRUCT lpCreateStruct);
+	afx_msg void OnSize(UINT type, int w, int h);
+	afx_msg void OnSetFocus(CWnd* wnd);
+	afx_msg void OnKillFocus(CWnd* wnd);
 	afx_msg void OnPaint();
-	afx_msg void OnMouseMove( UINT flags,CPoint p );
-	afx_msg void OnLButtonDown( UINT flags,CPoint p );
-	afx_msg void OnLButtonUp( UINT flags,CPoint p );
+	afx_msg void OnMouseMove(UINT flags, CPoint p);
+	afx_msg void OnLButtonDown(UINT flags, CPoint p);
+	afx_msg void OnLButtonUp(UINT flags, CPoint p);
 	afx_msg void en_change();
 	afx_msg void en_update();
-	afx_msg void en_selchange( NMHDR *nmhdr,LRESULT *result );
-	afx_msg void en_protected( NMHDR *nmhdr,LRESULT *result );
-	afx_msg void en_msgfilter( NMHDR *nmhdr,LRESULT *result );
-	afx_msg LRESULT onFind( WPARAM w,LPARAM l );
+	afx_msg void en_selchange(NMHDR* nmhdr, LRESULT* result);
+	afx_msg void en_protected(NMHDR* nmhdr, LRESULT* result);
+	afx_msg void en_msgfilter(NMHDR* nmhdr, LRESULT* result);
+	afx_msg LRESULT onFind(WPARAM w, LPARAM l);
 
 private:
-	EditorListener *listener;
+	EditorListener* listener;
 
-	string name;
-	bool findOnly,found;
-	CFindReplaceDialog *finder;
-	char findBuff[256],replaceBuff[256];
-	long selStart,selEnd;
-	int findFlags,d_c;
+	std::string name;
+	bool findOnly, found;
+	CFindReplaceDialog* finder;
+	char findBuff[256], replaceBuff[256];
+	long selStart, selEnd;
+	int findFlags, d_c;
 
 	//formatting
 	bool fmtBusy;
-	int  lineToFmt,fmtLineCount;
+	int  lineToFmt, fmtLineCount;
 
 	//streaming
-	string is_line;
-	istream *is_stream;
-	int is_curs,is_linenum;
+	std::string is_line;
+	std::istream* is_stream;
+	int is_curs, is_linenum;
 
 	//sizing
 	bool sizing;
@@ -91,29 +95,28 @@ private:
 
 	//tabber
 	Tabber tabber;
-	FuncList funcList,typeList,labsList;
+	FuncList funcList, typeList, labsList;
 	CRichEditCtrl editCtrl;
 
-	void funcSelected( int line );
-	void currentSet( Tabber *tabber,int index );
+	void funcSelected(int line);
+	void currentSet(Tabber* tabber, int index);
 
 	void resized();
-	void fixFmt( bool fmt );
-	void getSel(){ editCtrl.GetSel( selStart,selEnd ); }
-	void setSel(){ editCtrl.SetSel( selStart,selEnd ); }
+	void fixFmt(bool fmt);
+	void getSel() { editCtrl.GetSel(selStart, selEnd); }
+	void setSel() { editCtrl.SetSel(selStart, selEnd); }
 	void endFind();
-	void setFormat( int from,int to,int color,const string &s="" );
-	void formatLine( int line );
-	void caret();
+	void setFormat(int from, int to, int color, const std::string& s = "");
+	void formatLine(int line);
 	void cursorMoved();
-	string getLine( int line );
+	std::string getLine(int line);
 
 	void formatStreamLine();
 
-	DWORD streamIn( LPBYTE buff,LONG cnt,LONG *done );
+	DWORD streamIn(LPBYTE buff, LONG cnt, LONG* done);
 
-	static DWORD CALLBACK streamIn( DWORD cookie,LPBYTE buff,LONG cnt,LONG *done );
-	static DWORD CALLBACK streamOut( DWORD cookie,LPBYTE buff,LONG cnt,LONG *done );
+	static DWORD CALLBACK streamIn(DWORD cookie, LPBYTE buff, LONG cnt, LONG* done);
+	static DWORD CALLBACK streamOut(DWORD cookie, LPBYTE buff, LONG cnt, LONG* done);
 };
 
 #endif

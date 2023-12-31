@@ -7,7 +7,6 @@
 #include <vector>
 #include <string>
 
-using namespace std;
 
 #include "../linker/linker.h"
 #include "../compiler/environ.h"
@@ -20,19 +19,19 @@ extern int run_ver;
 extern int dbg_ver;
 
 //openLibs
-extern string home;
-extern Linker *linkerLib;
-extern Runtime *runtimeLib;
+extern std::string home;
+extern Linker* linkerLib;
+extern Runtime* runtimeLib;
 
 //linkLibs
-extern Module *runtimeModule;
-extern Environ *runtimeEnviron;
-extern vector<string> keyWords;
-extern vector<UserFunc> userFuncs;
+extern Module* runtimeModule;
+extern Environ* runtimeEnviron;
+extern std::vector<std::string> keyWords;
+extern std::vector<UserFunc> userFuncs;
 
-const char *openLibs();
+const char* openLibs();
 
-const char *linkLibs();
+const char* linkLibs();
 
 void closeLibs();
 

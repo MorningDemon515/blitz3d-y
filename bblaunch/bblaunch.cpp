@@ -1,84 +1,47 @@
 
 #include <string>
-#include <windows.h>
+#include <Windows.h>
 
-//#include "checkdx.h"
-//#include "checkie.h"
+static const char* bb_err =
+"Error when creating BlitzIDE process. Please make sure ide.exe is inside the \"bin\" folder.";
 
-using namespace std;
-
-/*
-static const char *dx_err=
-"You must have DirectX version 7 installed to run Blitz Basic.\n\n"
-"DirectX 7 is provided on the Blitz Basic CD in the DirectX7 folder.\n\n"
-"The latest version of DirectX is available from www.microsoft.com";
-
-static const char *ie_err=
-"You must have Internet Explorer version 4 installed to run Blitz Basic.\n\n"
-"Internet Explorer 5 is provided on the Blitz Basic CD in the IExplorer5 folder.\n\n"
-"The latest version of Internet Explorer is available from www.microsoft.com";
-*/
-
-static const char *bb_err=
-"Unable to run Blitz Basic";
-
-static const char *md_err=
-"Your desktop must be in high-colour mode to use Blitz Basic.\n\n"
-"You can change your display settings from the control panel."; 
-
-static string getAppDir(){
-	char buff[MAX_PATH];
-	if( GetModuleFileName( 0,buff,MAX_PATH ) ){
-		string t=buff;
-		int n=t.find_last_of( '\\' );
-		if( n!=string::npos ) t=t.substr( 0,n );
-		return t;
-	}
-	return "";
+static std::string getAppDir() {
+	char buffer[MAX_PATH];
+	std::string t = std::string(buffer, GetModuleFileName(NULL, buffer, MAX_PATH));
+	int n = t.find_last_of('\\');
+	if(n != std::string::npos) t = t.substr(0, n); //Remove filename from the path and return it
+	return t;
 }
 
-static void fail( const char *p ){
-	::MessageBox( 0,p,"Blitz Basic Error",MB_SETFOREGROUND|MB_TOPMOST|MB_ICONERROR );
+static void fail(const char* p) {
+	::MessageBox(0, p, "Blitz Error", MB_SETFOREGROUND | MB_TOPMOST | MB_ICONERROR);
 	ExitProcess(-1);
 }
 
-static int desktopDepth(){
-	HDC hdc=GetDC( GetDesktopWindow() );
-	return GetDeviceCaps( hdc,BITSPIXEL );
-}
+int WINAPI WinMain(_In_ HINSTANCE inst, _In_opt_ HINSTANCE prev, _In_ char* cmd, _In_ int show) {
+	std::string basedir = getAppDir();
+	std::string idePath = "\\bin\\ide.exe ";
 
-int _stdcall WinMain( HINSTANCE inst,HINSTANCE prev,char *cmd,int show ){
+	_putenv_s("blitzpath", basedir.c_str());
+	SetCurrentDirectory(basedir.c_str());
+	basedir += idePath + cmd;
 
-	if( desktopDepth()<16 ) fail( md_err );
+	STARTUPINFO startupInfo;
+	PROCESS_INFORMATION processInfo;
 
-	/*
-#ifndef PLUS
-	if( getDXVersion()<7 ) fail( dx_err );
-#endif
+	ZeroMemory(&startupInfo, sizeof(startupInfo));
+	startupInfo.cb = sizeof(startupInfo);
+	ZeroMemory(&processInfo, sizeof(processInfo));
 
-	if( getIEVersion()<4 ) fail( ie_err );
-	*/
-
-	//Ugly hack to get application dir...
-	string t=getAppDir();
-	putenv( ("blitzpath="+t).c_str() );
-	SetCurrentDirectory( t.c_str() );
-	t=t+"\\bin\\ide.exe "+cmd;
-
-    STARTUPINFO si;
-    PROCESS_INFORMATION pi;
-    ZeroMemory(&si,sizeof(si));si.cb=sizeof(si);
-	if( !CreateProcess( 0,(char*)t.c_str(),0,0,0,0,0,0,&si,&pi ) ){
-		::MessageBox( 0,bb_err,"Blitz Basic Error",MB_SETFOREGROUND|MB_TOPMOST|MB_ICONERROR );
-		ExitProcess(-1);
+	if(!CreateProcess(NULL, (char*)basedir.c_str(), NULL, NULL, FALSE, 0, NULL, NULL, &startupInfo, &processInfo)) {
+		fail(bb_err);
 	}
 
-	//wait for BB to start
-	WaitForInputIdle( pi.hProcess,INFINITE );
+	//Wait until BlitzIDE enters an idle state, then close bblaunch.
+	WaitForInputIdle(processInfo.hProcess, INFINITE);
 
-    // Close process and thread handles. 
-    CloseHandle( pi.hProcess );
-    CloseHandle( pi.hThread );
+	CloseHandle(processInfo.hProcess);
+	CloseHandle(processInfo.hThread);
 
-	return 0;
+	return 0; //Success!
 }

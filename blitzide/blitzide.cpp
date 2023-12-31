@@ -9,10 +9,10 @@
 
 BlitzIDE blitzIDE;
 
-BOOL BlitzIDE::InitInstance(){
+BOOL BlitzIDE::InitInstance() {
 
 #ifdef _DEBUG
-	AfxEnableMemoryTracking( true );
+	AfxEnableMemoryTracking(true);
 #endif
 
 	AfxInitRichEdit();
@@ -21,26 +21,18 @@ BOOL BlitzIDE::InitInstance(){
 
 	initLibs();
 
-	mainFrame=new MainFrame();
+	mainFrame = new MainFrame();
 	m_pMainWnd = mainFrame;
 
-#ifdef DEMO
-	aboutBlitz( true );
-#endif
-
-	mainFrame->LoadFrame( IDR_MAINFRAME );
-	mainFrame->MoveWindow( CRect( prefs.win_rect ) );
-	mainFrame->ShowWindow( m_nCmdShow );
+	mainFrame->LoadFrame(IDR_MAINFRAME);
+	mainFrame->MoveWindow(CRect(prefs.win_rect));
+	mainFrame->ShowWindow(prefs.win_maximized ? SW_SHOWMAXIMIZED : m_nCmdShow);
 	mainFrame->UpdateWindow();
-
-	if( prefs.win_maximized ) mainFrame->ShowWindow( SW_SHOWMAXIMIZED );
 
 	return TRUE;
 }
 
-int BlitzIDE::ExitInstance(){
-
+int BlitzIDE::ExitInstance() {
 	prefs.close();
-
 	return 0;
 }

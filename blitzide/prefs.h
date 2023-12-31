@@ -2,17 +2,18 @@
 #ifndef PREFS_H
 #define PREFS_H
 
-class Prefs{
+class Prefs {
 public:
 	bool prg_debug;
-	string prg_lastbuild;
+	bool prg_nolaa;
+	std::string prg_lastbuild;
 
 	RECT win_rect;
 	bool win_maximized;
 	bool win_notoolbar;
 
-	string font_editor,font_tabs,font_debug;
-	int font_editor_height,font_tabs_height,font_debug_height;
+	std::string font_editor, font_tabs, font_debug;
+	int font_editor_height, font_tabs_height, font_debug_height;
 
 	int rgb_bkgrnd;		//0
 	int rgb_string;		//1
@@ -23,23 +24,22 @@ public:
 	int rgb_default;	//6
 
 	int edit_tabs;
-	bool edit_blkcursor;
 	int edit_backup;
 
-	string img_toolbar;
+	std::string img_toolbar;
 
-	string homeDir;
-	CFont conFont,editFont,tabsFont,debugFont;
+	std::string homeDir;
+	CFont conFont, editFont, tabsFont, debugFont;
 
-	vector<string> recentFiles;
+	std::vector<std::string> recentFiles;
 
-	string cmd_line;
+	std::string cmd_line;
 
 	void open();
 	void close();
 
 private:
-
+	std::string boolToString(bool value);
 	void setDefault();
 	void createFonts();
 };

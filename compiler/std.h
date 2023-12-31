@@ -14,8 +14,6 @@
 #include <iostream>
 #include <iomanip>
 
-using namespace std;
-
-#include <windows.h>
+#include <Windows.h>
 
 #endif

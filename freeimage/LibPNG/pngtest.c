@@ -32,7 +32,7 @@
 #  if _WIN32_WCE < 211
      __error__ (f|w)printf functions are not supported on old WindowsCE.;
 #  endif
-#  include <windows.h>
+#  include <Windows.h>
 #  include <stdlib.h>
 #  define READFILE(file, data, length, check) \
      if (ReadFile(file, data, length, &check,NULL)) check = 0

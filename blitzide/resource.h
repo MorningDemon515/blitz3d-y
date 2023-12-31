@@ -1,11 +1,11 @@
 //{{NO_DEPENDENCIES}}
-// Microsoft Developer Studio generated include file.
+// Microsoft Visual C++ generated include file.
 // Used by blitzide.rc
 //
+#define IDI_MAIN_ICON                   100
 #define IDR_MAINFRAME                   101
 #define IDD_COMPILING                   123
 #define IDR_DEBUGFRAME                  125
-#define IDB_BITMAP1                     127
 #define IDD_COMMANDLINE                 129
 #define IDD_ABOUT                       130
 #define IDB_BITMAP2                     132
@@ -68,14 +68,15 @@
 #define ID_COMMANDLINE                  40129
 #define ID_REEXECUTE                    40130
 #define ID_SUPPORT                      40131
+#define ID_NLAA                         40132
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        133
+#define _APS_NEXT_RESOURCE_VALUE        144
 #define _APS_NEXT_COMMAND_VALUE         40133
-#define _APS_NEXT_CONTROL_VALUE         1025
+#define _APS_NEXT_CONTROL_VALUE         1026
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
