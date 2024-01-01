@@ -19,33 +19,33 @@
 
 class gxRuntime;
 
-class gxGraphics {
+class gxGraphics{
 public:
-	IDirectDraw7* dirDraw;
-	IDirectDraw* ds_dirDraw;
+	IDirectDraw7 *dirDraw;
+	IDirectDraw *ds_dirDraw;
 
-	IDirect3D7* dir3d;
-	IDirect3DDevice7* dir3dDev;
+	IDirect3D7 *dir3d;
+	IDirect3DDevice7 *dir3dDev;
 	D3DDEVICEDESC7 dir3dDevDesc;
-	DDPIXELFORMAT primFmt, zbuffFmt;
+	DDPIXELFORMAT primFmt,zbuffFmt;
 
-	DDPIXELFORMAT texRGBFmt[2], texAlphaFmt[2], texRGBAlphaFmt[2], texRGBMaskFmt[2];
+	DDPIXELFORMAT texRGBFmt[2],texAlphaFmt[2],texRGBAlphaFmt[2],texRGBMaskFmt[2];
 
 	FT_Library ftLibrary;
 
-	gxGraphics(gxRuntime* runtime, IDirectDraw7* dirDraw, IDirectDrawSurface7* front, IDirectDrawSurface7* back, bool d3d);
+	gxGraphics( gxRuntime *runtime,IDirectDraw7 *dirDraw,IDirectDrawSurface7 *front,IDirectDrawSurface7 *back,bool d3d );
 	~gxGraphics();
 
 	bool restore();
 
-	gxRuntime* runtime;
+	gxRuntime *runtime;
 
 private:
 
-	gxCanvas* front_canvas, * back_canvas;
-	gxFont* def_font;
+	gxCanvas *front_canvas,*back_canvas;
+	gxFont *def_font;
 	bool gfx_lost;
-	gxMesh* dummy_mesh;
+	gxMesh *dummy_mesh;
 
 	std::set<gxFont*> font_set;
 	std::set<gxCanvas*> canvas_set;
@@ -55,7 +55,7 @@ private:
 	std::set<std::string> font_res;
 
 	DDGAMMARAMP _gammaRamp;
-	IDirectDrawGammaControl* _gamma;
+	IDirectDrawGammaControl *_gamma;
 
 	/***** GX INTERFACE *****/
 public:
@@ -69,15 +69,15 @@ public:
 
 	//MANIPULATORS
 	void vwait();
-	void flip(bool vwait);
+	void flip( bool vwait );
 
 	//SPECIAL!
-	void copy(gxCanvas* dest, int dx, int dy, int dw, int dh, gxCanvas* src, int sx, int sy, int sw, int sh);
+	void copy( gxCanvas *dest,int dx,int dy,int dw,int dh,gxCanvas *src,int sx,int sy,int sw,int sh );
 
 	//NEW! Gamma control!
-	void setGamma(int r, int g, int b, float dr, float dg, float db);
-	void getGamma(int r, int g, int b, float* dr, float* dg, float* db);
-	void updateGamma(bool calibrate);
+	void setGamma( int r,int g,int b,float dr,float dg,float db );
+	void getGamma( int r,int g,int b,float *dr,float *dg,float *db );
+	void updateGamma( bool calibrate );
 
 	//ACCESSORS
 	int getWidth()const;
@@ -87,31 +87,31 @@ public:
 	int getAvailVidmem()const;
 	int getTotalVidmem()const;
 
-	gxCanvas* getFrontCanvas()const;
-	gxCanvas* getBackCanvas()const;
-	gxFont* getDefaultFont()const;
+	gxCanvas *getFrontCanvas()const;
+	gxCanvas *getBackCanvas()const;
+	gxFont *getDefaultFont()const;
 
 	//OBJECTS
-	gxCanvas* createCanvas(int width, int height, int flags);
-	gxCanvas* loadCanvas(const std::string& file, int flags);
-	gxCanvas* verifyCanvas(gxCanvas* canvas);
-	void freeCanvas(gxCanvas* canvas);
+	gxCanvas *createCanvas( int width,int height,int flags );
+	gxCanvas *loadCanvas( const std::string &file,int flags );
+	gxCanvas *verifyCanvas( gxCanvas *canvas );
+	void freeCanvas( gxCanvas *canvas );
 
-	gxMovie* openMovie(const std::string& file, int flags);
-	gxMovie* verifyMovie(gxMovie* movie);
-	void closeMovie(gxMovie* movie);
+	gxMovie *openMovie( const std::string &file,int flags );
+	gxMovie *verifyMovie( gxMovie *movie );
+	void closeMovie( gxMovie *movie );
 
-	gxFont* loadFont(const std::string& font, int height);
-	gxFont* verifyFont(gxFont* font);
-	void freeFont(gxFont* font);
+	gxFont *loadFont(const std::string &font,int height);
+	gxFont *verifyFont( gxFont *font );
+	void freeFont( gxFont *font );
 
-	gxScene* createScene(int flags);
-	gxScene* verifyScene(gxScene* scene);
-	void freeScene(gxScene* scene);
+	gxScene *createScene( int flags );
+	gxScene *verifyScene( gxScene *scene );
+	void freeScene( gxScene *scene );
 
-	gxMesh* createMesh(int max_verts, int max_tris, int flags);
-	gxMesh* verifyMesh(gxMesh* mesh);
-	void freeMesh(gxMesh* mesh);
+	gxMesh *createMesh( int max_verts,int max_tris,int flags );
+	gxMesh *verifyMesh( gxMesh *mesh );
+	void freeMesh( gxMesh *mesh );
 };
 
 #endif

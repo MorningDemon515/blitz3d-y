@@ -9,11 +9,13 @@
 
 #define WM_IDLEUPDATECMDUI  0x0363
 
-enum {
+enum
+{
 	WM_STOP = WM_APP + 1, WM_RUN, WM_END
 };
 
-enum {
+enum
+{
 	STARTING, RUNNING, STOPPED, ENDING
 };
 
@@ -40,15 +42,18 @@ BEGIN_MESSAGE_MAP(MainFrame, CFrameWnd)
 
 END_MESSAGE_MAP()
 
-MainFrame::MainFrame() :state(STARTING), step_level(-1), cur_pos(0), cur_file(0) {
+MainFrame::MainFrame() :state(STARTING), step_level(-1), cur_pos(0), cur_file(0)
+{
 }
 
-MainFrame::~MainFrame() {
+MainFrame::~MainFrame()
+{
 	std::map<const char*, SourceFile*>::iterator it;
 	for(it = files.begin(); it != files.end(); ++it) delete it->second;
 }
 
-int MainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
+int MainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
+{
 	CFrameWnd::OnCreate(lpCreateStruct);
 
 	HICON hIcon = LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDI_ICON1));
@@ -126,24 +131,30 @@ int MainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
 	return 0;
 }
 
-void MainFrame::setState(int n) {
+void MainFrame::setState(int n)
+{
 	state = n;
 	SendMessageToDescendants(WM_IDLEUPDATECMDUI, (WPARAM)TRUE, 0, TRUE, TRUE);
-	if(shouldRun()) {
-		if(HWND app = ::FindWindow("Blitz Runtime Class", 0)) {
+	if(shouldRun())
+	{
+		if(HWND app = ::FindWindow("Blitz Runtime Class", 0))
+		{
 			::SetActiveWindow(app);
 		}
 	}
-	else {
+	else
+	{
 		SetActiveWindow();
 	}
 }
 
-void MainFrame::OnClose() {
+void MainFrame::OnClose()
+{
 	cmdEnd();
 }
 
-void MainFrame::OnSize(UINT type, int sw, int sh) {
+void MainFrame::OnSize(UINT type, int sw, int sh)
+{
 	CFrameWnd::OnSize(type, sw, sh);
 
 	CRect r, t; GetClientRect(&r);
@@ -151,18 +162,20 @@ void MainFrame::OnSize(UINT type, int sw, int sh) {
 
 	toolBar.GetWindowRect(&t); y += t.Height(); h -= t.Height();
 
-	tabber.MoveWindow(x, y, w - 360, h);
+	tabber.MoveWindow(x, y, w - 240, h);
 
-	tabber2.MoveWindow(x + w - 360, y, 360, h);
+	tabber2.MoveWindow(x + w - 240, y, 240, h);
 }
 
-void MainFrame::setRuntime(void* mod, void* env) {
+void MainFrame::setRuntime(void* mod, void* env)
+{
 	consts_tree.reset((Environ*)env);
 	globals_tree.reset((Module*)mod, (Environ*)env);
 	locals_tree.reset((Environ*)env);
 }
 
-void MainFrame::showCurStmt() {
+void MainFrame::showCurStmt()
+{
 	if(!cur_file) return;
 
 	SourceFile* t = sourceFile(cur_file);
@@ -174,17 +187,20 @@ void MainFrame::showCurStmt() {
 	locals_tree.refresh();
 }
 
-void MainFrame::debugRun() {
+void MainFrame::debugRun()
+{
 	setState(RUNNING);
 }
 
-void MainFrame::debugStop() {
+void MainFrame::debugStop()
+{
 	step_level = locals_tree.size();
 	setState(STOPPED);
 	showCurStmt();
 }
 
-void MainFrame::debugStmt(int pos, const char* file) {
+void MainFrame::debugStmt(int pos, const char* file)
+{
 	cur_pos = pos;
 	cur_file = file;
 
@@ -193,7 +209,8 @@ void MainFrame::debugStmt(int pos, const char* file) {
 	::PostMessage(0, WM_STOP, 0, 0);
 }
 
-void MainFrame::debugEnter(void* frame, void* env, const char* func) {
+void MainFrame::debugEnter(void* frame, void* env, const char* func)
+{
 	locals_tree.pushFrame(frame, env, func);
 
 	if(locals_tree.size() > 1) return;
@@ -204,63 +221,77 @@ void MainFrame::debugEnter(void* frame, void* env, const char* func) {
 	setState(RUNNING);
 }
 
-void MainFrame::debugLeave() {
+void MainFrame::debugLeave()
+{
 	locals_tree.popFrame();
 }
 
-void MainFrame::debugMsg(const char* msg, bool serious) {
-	if(serious) {
+void MainFrame::debugMsg(const char* msg, bool serious)
+{
+	if(serious)
+	{
 		::MessageBoxW(0, UTF8::convertToUtf16(msg).c_str(), L"Catastrophic Error!", MB_OK | MB_ICONWARNING | MB_TOPMOST | MB_SETFOREGROUND);
 	}
-	else {
+	else
+	{
 		::MessageBoxW(0, UTF8::convertToUtf16(msg).c_str(), L"Runtime Message", MB_OK | MB_ICONINFORMATION | MB_TOPMOST | MB_SETFOREGROUND);
 	}
 }
 
-void MainFrame::debugLog(const char* msg) {
+void MainFrame::debugLog(const char* msg)
+{
 	debug_log.ReplaceSel(msg);
 	debug_log.ReplaceSel("\n");
 	tabber.setCurrent(0);
 	setState(state);
 }
 
-void MainFrame::debugSys(void* m) {
+void MainFrame::debugSys(void* m)
+{
 }
 
-void MainFrame::cmdStop() {
+void MainFrame::cmdStop()
+{
 	::PostMessage(0, WM_STOP, 0, 0);
 }
 
-void MainFrame::cmdRun() {
+void MainFrame::cmdRun()
+{
 	step_level = -1;
 	::PostMessage(0, WM_RUN, 0, 0);
 }
 
-void MainFrame::cmdEnd() {
+void MainFrame::cmdEnd()
+{
 	::PostMessage(0, WM_END, 0, 0);
 	setState(ENDING);
 }
 
-void MainFrame::cmdStepOver() {
+void MainFrame::cmdStepOver()
+{
 	::PostMessage(0, WM_RUN, 0, 0);
 }
 
-void MainFrame::cmdStepInto() {
+void MainFrame::cmdStepInto()
+{
 	step_level = locals_tree.size() + 1;
 	::PostMessage(0, WM_RUN, 0, 0);
 }
 
-void MainFrame::cmdStepOut() {
+void MainFrame::cmdStepOut()
+{
 	step_level = locals_tree.size() - 1;
 	::PostMessage(0, WM_RUN, 0, 0);
 }
 
-SourceFile* MainFrame::sourceFile(const char* file) {
+SourceFile* MainFrame::sourceFile(const char* file)
+{
 	if(!file) file = "<unknown>";
 
 	std::map<const char*, SourceFile*>::const_iterator it = files.find(file);
 
-	if(it != files.end()) {
+	if(it != files.end())
+	{
 		tabber.setCurrent(file_tabs[file]);
 		return it->second;
 	}
@@ -277,7 +308,8 @@ SourceFile* MainFrame::sourceFile(const char* file) {
 		ES_NOHIDESEL | ES_MULTILINE | ES_AUTOHSCROLL | ES_AUTOVSCROLL,
 		CRect(0, 0, 0, 0), &tabber, 1);
 
-	if(FILE* f = fopen(file, "rb")) {
+	if(FILE* f = fopen(file, "rb"))
+	{
 		fseek(f, 0, SEEK_END);
 		int sz = ftell(f);
 		fseek(f, 0, SEEK_SET);
@@ -300,12 +332,15 @@ SourceFile* MainFrame::sourceFile(const char* file) {
 	return t;
 }
 
-void MainFrame::updateCmdUI(CCmdUI* ui) {
-	if(state != RUNNING && state != STOPPED) {
+void MainFrame::updateCmdUI(CCmdUI* ui)
+{
+	if(state != RUNNING && state != STOPPED)
+	{
 		ui->Enable(false);
 		return;
 	}
-	switch(ui->m_nID) {
+	switch(ui->m_nID)
+	{
 		case ID_STOP:
 			ui->Enable(shouldRun());
 			break;
@@ -321,7 +356,8 @@ void MainFrame::updateCmdUI(CCmdUI* ui) {
 	}
 }
 
-void MainFrame::OnWindowPosChanging(WINDOWPOS* pos) {
+void MainFrame::OnWindowPosChanging(WINDOWPOS* pos)
+{
 	RECT rect;
 	SystemParametersInfo(SPI_GETWORKAREA, 0, &rect, 0);
 

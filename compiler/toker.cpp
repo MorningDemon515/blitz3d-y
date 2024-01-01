@@ -8,7 +8,8 @@ int Toker::chars_toked;
 
 static std::map<std::string, int> alphaTokes, lowerTokes;
 
-static void makeKeywords() {
+static void makeKeywords()
+{
 	static bool made;
 	if(made) return;
 
@@ -84,44 +85,53 @@ static void makeKeywords() {
 	alphaTokes["PowTwo"] = POWTWO;
 
 	std::map<std::string, int>::const_iterator it;
-	for(it = alphaTokes.begin(); it != alphaTokes.end(); ++it) {
+	for(it = alphaTokes.begin(); it != alphaTokes.end(); ++it)
+	{
 		lowerTokes[tolower(it->first)] = it->second;
 	}
 	made = true;
 }
 
-Toker::Toker(std::istream& in) :in(in), curr_row(-1) {
+Toker::Toker(std::istream& in) :in(in), curr_row(-1)
+{
 	makeKeywords();
 	nextline();
 }
 
-std::map<std::string, int>& Toker::getKeywords() {
+std::map<std::string, int>& Toker::getKeywords()
+{
 	makeKeywords();
 	return alphaTokes;
 }
 
-int Toker::pos() {
+int Toker::pos()
+{
 	return ((curr_row) << 16) | (tokes[curr_toke].from);
 }
 
-int Toker::curr() {
+int Toker::curr()
+{
 	return tokes[curr_toke].n;
 }
 
-std::string Toker::text() {
+std::string Toker::text()
+{
 	int from = tokes[curr_toke].from, to = tokes[curr_toke].to;
 	return line.substr(from, to - from);
 }
 
-int Toker::lookAhead(int n) {
+int Toker::lookAhead(int n)
+{
 	return tokes[curr_toke + n].n;
 }
 
-void Toker::nextline() {
+void Toker::nextline()
+{
 	++curr_row;
 	curr_toke = 0;
 	tokes.clear();
-	if(in.eof()) {
+	if(in.eof())
+	{
 		line.resize(1); line[0] = EOF;
 		tokes.push_back(Toke(EOF, 0, 1));
 		return;
@@ -130,59 +140,71 @@ void Toker::nextline() {
 	getline(in, line); line += '\n';
 	chars_toked += line.size();
 
-	for(int k = 0; k < line.size(); ) {
+	for(int k = 0; k < line.size(); )
+	{
 		int c = line[k], from = k;
-		if(c == '\n') {
+		if(c == '\n')
+		{
 			tokes.push_back(Toke(c, from, ++k));
 			continue;
 		}
 		if(isspace(c)) { ++k; continue; }
-		if(c == ';') {
-			for(++k; line[k] != '\n'; ++k) {}
+		if(c == ';')
+		{
+			for(++k; line[k] != '\n'; ++k) { }
 			continue;
 		}
-		if(c == '.' && isdigit(line[k + 1])) {
-			for(k += 2; isdigit(line[k]); ++k) {}
+		if(c == '.' && isdigit(line[k + 1]))
+		{
+			for(k += 2; isdigit(line[k]); ++k) { }
 			tokes.push_back(Toke(FLOATCONST, from, k));
 			continue;
 		}
-		if(isdigit(c)) {
-			for(++k; isdigit(line[k]); ++k) {}
-			if(line[k] == '.') {
-				for(++k; isdigit(line[k]); ++k) {}
+		if(isdigit(c))
+		{
+			for(++k; isdigit(line[k]); ++k) { }
+			if(line[k] == '.')
+			{
+				for(++k; isdigit(line[k]); ++k) { }
 				tokes.push_back(Toke(FLOATCONST, from, k));
 				continue;
 			}
 			tokes.push_back(Toke(INTCONST, from, k));
 			continue;
 		}
-		if(c == '%' && (line[k + 1] == '0' || line[k + 1] == '1')) {
-			for(k += 2; line[k] == '0' || line[k] == '1'; ++k) {}
+		if(c == '%' && (line[k + 1] == '0' || line[k + 1] == '1'))
+		{
+			for(k += 2; line[k] == '0' || line[k] == '1'; ++k) { }
 			tokes.push_back(Toke(BINCONST, from, k));
 			continue;
 		}
-		if(c == '$' && isxdigit(line[k + 1])) {
-			for(k += 2; isxdigit(line[k]); ++k) {}
+		if(c == '$' && isxdigit(line[k + 1]))
+		{
+			for(k += 2; isxdigit(line[k]); ++k) { }
 			tokes.push_back(Toke(HEXCONST, from, k));
 			continue;
 		}
-		if(isalpha(c)) {
-			for(++k; isalnum(line[k]) || line[k] == '_'; ++k) {}
+		if(isalpha(c))
+		{
+			for(++k; isalnum(line[k]) || line[k] == '_'; ++k) { }
 
 			std::string ident = tolower(line.substr(from, k - from));
 
-			if(line[k] == ' ' && isalpha(line[k + 1])) {
+			if(line[k] == ' ' && isalpha(line[k + 1]))
+			{
 				int t = k;
-				for(t += 2; isalnum(line[t]) || line[t] == '_'; ++t) {}
+				for(t += 2; isalnum(line[t]) || line[t] == '_'; ++t) { }
 				std::string s = tolower(line.substr(from, t - from));
-				if(lowerTokes.find(s) != lowerTokes.end()) {
+				if(lowerTokes.find(s) != lowerTokes.end())
+				{
 					k = t; ident = s;
 				}
 			}
 
 			std::map<std::string, int>::iterator it = lowerTokes.find(ident);
 
-			if(it == lowerTokes.end()) {
+			if(it == lowerTokes.end())
+			{
 				for(int n = from; n < k; ++n) line[n] = tolower(line[n]);
 				tokes.push_back(Toke(IDENT, from, k));
 				continue;
@@ -191,22 +213,26 @@ void Toker::nextline() {
 			tokes.push_back(Toke(it->second, from, k));
 			continue;
 		}
-		if(c == '\"') {
-			for(++k; line[k] != '\"' && line[k] != '\n'; ++k) {}
+		if(c == '\"')
+		{
+			for(++k; line[k] != '\"' && line[k] != '\n'; ++k) { }
 			if(line[k] == '\"') ++k;
 			tokes.push_back(Toke(STRINGCONST, from, k));
 			continue;
 		}
 		int n = line[k + 1];
-		if((c == '<' && n == '>') || (c == '>' && n == '<')) {
+		if((c == '<' && n == '>') || (c == '>' && n == '<'))
+		{
 			tokes.push_back(Toke(NE, from, k += 2));
 			continue;
 		}
-		if((c == '<' && n == '=') || (c == '=' && n == '<')) {
+		if((c == '<' && n == '=') || (c == '=' && n == '<'))
+		{
 			tokes.push_back(Toke(LE, from, k += 2));
 			continue;
 		}
-		if((c == '>' && n == '=') || (c == '=' && n == '>')) {
+		if((c == '>' && n == '=') || (c == '=' && n == '>'))
+		{
 			tokes.push_back(Toke(GE, from, k += 2));
 			continue;
 		}
@@ -215,7 +241,8 @@ void Toker::nextline() {
 	if(!tokes.size()) exit(0);
 }
 
-int Toker::next() {
+int Toker::next()
+{
 	if(++curr_toke == tokes.size()) nextline();
 	return curr();
 }

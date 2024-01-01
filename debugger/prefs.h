@@ -2,7 +2,7 @@
 #ifndef PREFS_H
 #define PREFS_H
 
-class Prefs {
+class Prefs{
 public:
 	bool prg_debug;
 	bool prg_nolaa;
@@ -12,8 +12,8 @@ public:
 	bool win_maximized;
 	bool win_notoolbar;
 
-	std::string font_editor, font_tabs, font_debug;
-	int font_editor_height, font_tabs_height, font_debug_height;
+	std::string font_editor,font_tabs,font_debug;
+	int font_editor_height,font_tabs_height,font_debug_height;
 
 	int rgb_bkgrnd;		//0
 	int rgb_string;		//1
@@ -29,7 +29,7 @@ public:
 	std::string img_toolbar;
 
 	std::string homeDir;
-	CFont conFont, editFont, tabsFont, debugFont;
+	CFont conFont,editFont,tabsFont,debugFont;
 
 	std::vector<std::string> recentFiles;
 

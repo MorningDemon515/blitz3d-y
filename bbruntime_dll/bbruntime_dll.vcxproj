@@ -19,13 +19,13 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
@@ -94,7 +94,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <OutputFile>..\_release\bin\runtime.dll</OutputFile>
-      <ImportLibrary>..\_release\userlibs\runtime.lib</ImportLibrary>
+      <ImportLibrary>.\Debug\runtime.lib</ImportLibrary>
       <AdditionalOptions> /FIXED:NO</AdditionalOptions>
       <AdditionalDependencies>wsock32.lib;amstrmid.lib;winmm.lib;dxguid.lib;ddraw.lib;dsound.lib;dinput8.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
@@ -157,7 +157,7 @@
       <LinkDLL>true</LinkDLL>
       <SubSystem>Windows</SubSystem>
       <OutputFile>..\_release\bin\runtime.dll</OutputFile>
-      <ImportLibrary>..\_release\userlibs\runtime.lib</ImportLibrary>
+      <ImportLibrary>.\Release\runtime.lib</ImportLibrary>
       <AdditionalDependencies>wsock32.lib;amstrmid.lib;winmm.lib;dxguid.lib;ddraw.lib;dsound.lib;dinput8.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>false</GenerateDebugInformation>
     </Link>

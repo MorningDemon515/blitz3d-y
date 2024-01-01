@@ -15,16 +15,16 @@ To be statically linked with an appropriate gxruntime driver.
 
 #include "../gxruntime/gxruntime.h"
 
-void bbruntime_link(void (*rtSym)(const char* sym, void* pc));
+void bbruntime_link( void (*rtSym)( const char *sym,void *pc ) );
 
-const char* bbruntime_run(gxRuntime* runtime, void (*pc)(), bool debug);
+const char *bbruntime_run( gxRuntime *runtime,void (*pc)(),bool debug );
 
-void bbruntime_panic(const char* err);
+void bbruntime_panic( const char *err );
 
 class ErrorMessagePool {
-public:
-	static std::string* memoryAccessViolation;
-	static int size;
+	public:
+		static std::string* memoryAccessViolation;
+		static int size;
 };
 
 #endif

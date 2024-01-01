@@ -8,151 +8,150 @@
 
 #ifdef MEMDEBUG
 
-struct Mem {
-	Mem* next, * prev;
-	const char* file;
-	int line, size, tag;
+struct Mem{
+	Mem *next,*prev;
+	const char *file;
+	int line,size,tag;
 };
 
 static bool track;
 
-static Mem head, tail;
-static Mem x_head, x_tail;
+static Mem head,tail;
+static Mem x_head,x_tail;
 
-static void remove(Mem* m) {
-	m->next->prev = m->prev;
-	m->prev->next = m->next;
+static void remove( Mem *m ){
+	m->next->prev=m->prev;
+	m->prev->next=m->next;
 }
 
-static void insert(Mem* m, Mem* next) {
-	m->next = next;
-	m->prev = next->prev;
-	next->prev->next = m;
-	next->prev = m;
+static void insert( Mem *m,Mem *next ){
+	m->next=next;
+	m->prev=next->prev;
+	next->prev->next=m;
+	next->prev=m;
 }
 
-static void init() {
-	if(head.next) return;
-	head.next = head.prev = &tail; head.tag = 'HEAD';
-	tail.next = tail.prev = &head; tail.tag = 'TAIL';
-	x_head.next = x_head.prev = &x_tail; x_head.tag = 'HEAD';
-	x_tail.next = x_tail.prev = &x_head; x_tail.tag = 'TAIL';
+static void init(){
+	if( head.next ) return;
+	head.next=head.prev=&tail;head.tag='HEAD';
+	tail.next=tail.prev=&head;tail.tag='TAIL';
+	x_head.next=x_head.prev=&x_tail;x_head.tag='HEAD';
+	x_tail.next=x_tail.prev=&x_head;x_tail.tag='TAIL';
 }
 
-static void check(Mem* m) {
-	if(m->tag != 'DNEW') {
-		MessageBox(GetDesktopWindow(), "mem_check: pre_tag!='DNEW'", "Memory error", MB_OK | MB_ICONWARNING);
-		if(m->tag == 'NDWE') {
-			string t = "Probable double delete";
-			t += "- d_new file: " + string(m->file) + " line:" + itoa(m->line);
-			MessageBox(GetDesktopWindow(), t.c_str(), "Memory error", MB_OK | MB_ICONWARNING);
+static void check( Mem *m ){
+	if( m->tag!='DNEW' ){
+		MessageBox( GetDesktopWindow(),"mem_check: pre_tag!='DNEW'","Memory error",MB_OK|MB_ICONWARNING );
+		if( m->tag=='NDWE' ){
+			string t="Probable double delete";
+			t+="- d_new file: "+string(m->file)+" line:"+itoa(m->line);
+			MessageBox( GetDesktopWindow(),t.c_str(),"Memory error",MB_OK|MB_ICONWARNING );
 		}
-		ExitProcess(0);
+		ExitProcess( 0 );
 	}
-	int* t = (int*)((char*)(m + 1) + m->size);
-	if(*t != 'dnew') {
-		MessageBox(GetDesktopWindow(), "mem_check: post_tag!='dnew'", "Memory error", MB_OK | MB_ICONWARNING);
-		string t = "Probable memory overwrite - d_new file: " + string(m->file) + " line:" + itoa(m->line);
-		MessageBox(GetDesktopWindow(), t.c_str(), "Memory error", MB_OK | MB_ICONWARNING);
-		ExitProcess(0);
-	}
-}
-
-static void* op_new(size_t size, const char* file = "<unknown>", int line = 0) {
-	init();
-	Mem* m = (Mem*)malloc(sizeof(Mem) + size + sizeof(int));
-	memset(m + 1, 0xcc, size);
-	m->file = file; m->line = line; m->size = size; m->tag = 'DNEW';
-	int* t = (int*)((char*)(m + 1) + size); *t = 'dnew';
-	if(track) insert(m, head.next);
-	else insert(m, x_head.next);
-	return m + 1;
-}
-
-static void op_delete(void* q) {
-	init();
-	if(!q) return;
-	Mem* m = (Mem*)q - 1;
-	check(m);
-	remove(m);
-	m->tag = 'NDWE';
-	*(int*)((char*)(m + 1) + m->size) = 'ndwe';
-	free(m);
-}
-
-void trackmem(bool enable) {
-	init();
-	if(track == enable) return;
-	track = enable;
-	Mem* m;
-	while((m = head.next) != &tail) {
-		remove(m); insert(m, x_head.next);
+	int *t=(int*)( (char*)(m+1)+m->size );
+	if( *t!='dnew' ){
+		MessageBox( GetDesktopWindow(),"mem_check: post_tag!='dnew'","Memory error",MB_OK|MB_ICONWARNING );
+		string t="Probable memory overwrite - d_new file: "+string(m->file)+" line:"+itoa(m->line);
+		MessageBox( GetDesktopWindow(),t.c_str(),"Memory error",MB_OK|MB_ICONWARNING );
+		ExitProcess( 0 );
 	}
 }
 
-void checkmem(ostream& out) {
+static void *op_new( size_t size,const char *file="<unknown>",int line=0 ){
 	init();
-	Mem* m, * next;
-	int sum = 0, usum = 0, xsum = 0;
-	for(m = head.next; m != &tail; m = next) {
-		check(m);
-		next = m->next;
-		if(m->line) {
-			out << m->file << " line:" << m->line << " " << m->size << " bytes" << endl;
-			sum += m->size;
+	Mem *m=(Mem*)malloc( sizeof(Mem)+size+sizeof(int) );
+	memset( m+1,0xcc,size );
+	m->file=file;m->line=line;m->size=size;m->tag='DNEW';
+	int *t=(int*)( (char*)(m+1)+size );*t='dnew';
+	if( track ) insert( m,head.next );
+	else insert( m,x_head.next );
+	return m+1;
+}
+
+static void op_delete( void *q ){
+	init();
+	if( !q ) return;
+	Mem *m=(Mem*)q-1;
+	check( m );
+	remove( m );
+	m->tag='NDWE';
+	*(int*)( (char*)(m+1)+m->size )='ndwe';
+	free( m );
+}
+
+void trackmem( bool enable ){
+	init();
+	if( track==enable ) return;
+	track=enable;
+	Mem *m;
+	while( (m=head.next)!=&tail ){
+		remove( m );insert( m,x_head.next );
+	}
+}
+
+void checkmem( ostream &out ){
+	init();
+	Mem *m,*next;
+	int sum=0,usum=0,xsum=0;
+	for( m=head.next;m!=&tail;m=next ){
+		check( m );
+		next=m->next;
+		if( m->line ){
+			out<<m->file<<" line:"<<m->line<<" "<<m->size<<" bytes"<<endl;
+			sum+=m->size;
+		}else{
+			usum+=m->size;
 		}
-		else {
-			usum += m->size;
-		}
 	}
-	for(m = x_head.next; m != &x_tail; m = m->next) {
-		check(m);
-		xsum += m->size;
+	for( m=x_head.next;m!=&x_tail;m=m->next ){
+		check( m );
+		xsum+=m->size;
 	}
-	out << "Tracked blitz mem in use:" << sum << std::endl;
-	out << "Tracked other mem in use:" << usum << std::endl;
-	out << "Untracked mem in use:" << xsum << std::endl;
-	out << "Total mem in use:" << (sum + usum + xsum) << std::endl;
+	out<<"Tracked blitz mem in use:"<<sum<< std::endl;
+	out<<"Tracked other mem in use:"<<usum<< std::endl;
+	out<<"Untracked mem in use:"<<xsum<< std::endl;
+	out<<"Total mem in use:"<<(sum+usum+xsum)<< std::endl;
 }
 
-void* _cdecl operator new(size_t size) { return op_new(size); }
-void* _cdecl operator new[](size_t size) { return op_new(size); }
-void* _cdecl operator new(size_t size, const char* file, int line) { return op_new(size, file, line); }
-void* _cdecl operator new[](size_t size, const char* file, int line) { return op_new(size, file, line); }
-void _cdecl operator delete(void* q) { op_delete(q); }
-void _cdecl operator delete[](void* q) { op_delete(q); }
-void _cdecl operator delete(void* q, const char* file, int line) { op_delete(q); }
-void _cdecl operator delete[](void* q, const char* file, int line) { op_delete(q); }
+void * _cdecl operator new( size_t size ){ return op_new( size ); }
+void * _cdecl operator new[]( size_t size ){ return op_new( size ); }
+void * _cdecl operator new( size_t size,const char *file,int line ){ return op_new( size,file,line ); }
+void * _cdecl operator new[]( size_t size,const char *file,int line ){ return op_new( size,file,line ); }
+void _cdecl operator delete( void *q ){ op_delete( q ); }
+void _cdecl operator delete[]( void *q ){ op_delete( q ); }
+void _cdecl operator delete( void *q,const char *file,int line ){ op_delete( q ); }
+void _cdecl operator delete[]( void *q,const char *file,int line ){ op_delete( q ); }
 
 #else
 
-void trackmem(bool enable) {
+void trackmem( bool enable ){
 }
 
-void checkmem(std::ostream& out) {
+void checkmem(std::ostream &out ){
 }
 
 #endif
 
-int atoi(const std::string& s) {
-	return atoi(s.c_str());
+int atoi( const std::string &s ){
+	return atoi( s.c_str() );
 }
 
-double atof(const std::string& s) {
-	return atof(s.c_str());
+double atof( const std::string &s ){
+	return atof( s.c_str() );
 }
 
-std::string itoa(int n) {
-	char buff[32]; itoa(n, buff, 10);
-	return std::string(buff);
+std::string itoa( int n ){
+	char buff[32];itoa( n, buff,10 );
+	return std::string( buff );
 }
 
 /////////////
 //By FLOYD!//
 /////////////
-std::string ftoa(float n) {
+std::string ftoa( float n ){
 
-	static const int digits = 6;
+	static const int digits=6;
 
 	int eNeg = -4, ePos = 8;	// limits for e notation.
 
@@ -160,128 +159,128 @@ std::string ftoa(float n) {
 	std::string t;
 	int dec, sign;
 
-	if(_finite(n)) {
-		t = _ecvt(n, digits, &dec, &sign);
+	if ( _finite( n ) ){		
+		t = _ecvt( n, digits, &dec, &sign );
 
-		if(dec <= eNeg + 1 || dec > ePos) {
+		if ( dec <= eNeg + 1 || dec > ePos ){
 
-			_gcvt(n, digits, buffer);
+			_gcvt( n, digits, buffer );
 			t = buffer;
 			return t;
 		}
-
+		
 		// Here is the tricky case. We want a nicely formatted
 		// number with no e-notation or multiple trailing zeroes.
+	
+		if ( dec <= 0 ){
 
-		if(dec <= 0) {
-
-			t = "0." + std::string(-dec, '0') + t;
+			t = "0." + std::string( -dec, '0' ) + t;
 			dec = 1;	// new location for decimal point
 
 		}
-		else if(dec < digits) {
+		else if( dec < digits ){
 
-			t = t.substr(0, dec) + "." + t.substr(dec);
+			t = t.substr( 0, dec ) + "." + t.substr( dec );
 
 		}
-		else {
+		else{
 
-			t = t + std::string(dec - digits, '0') + ".0";
+			t = t + std::string( dec - digits, '0' ) + ".0";
 			dec += dec - digits;
 
 		}
-
+	
 		// Finally, trim off excess zeroes.
 
-		int dp1 = dec + 1, p = t.length();
-		while(--p > dp1 && t[p] == '0');
-		t = std::string(t, 0, ++p);
+		int dp1 = dec + 1, p = t.length();	
+		while( --p > dp1 && t[p] == '0' );
+		t = std::string( t, 0, ++p );
 
 		return sign ? "-" + t : t;
 
 	}	// end of finite case
 
-	if(_isnan(n))	return "NaN";
-	if(n > 0.0)		return "Infinity";
-	if(n < 0.0)		return "-Infinity";
+	if ( _isnan( n ) )	return "NaN";
+	if ( n > 0.0 )		return "Infinity";
+	if ( n < 0.0 )		return "-Infinity";
 
 	abort();
 }
 
-std::string tolower(const std::string& s) {
-	std::string t = s;
-	for(int k = 0; k < t.size(); ++k) t[k] = tolower(t[k]);
+std::string tolower( const std::string &s ){
+	std::string t=s;
+	for( int k=0;k<t.size();++k ) t[k]=tolower(t[k]);
 	return t;
 }
 
-std::string toupper(const std::string& s) {
-	std::string t = s;
-	for(int k = 0; k < t.size(); ++k) t[k] = toupper(t[k]);
+std::string toupper( const std::string &s ){
+	std::string t=s;
+	for( int k=0;k<t.size();++k ) t[k]=toupper(t[k]);
 	return t;
 }
 
-std::string fullfilename(const std::string& t) {
-	char buff[MAX_PATH + 1], * p;
-	GetFullPathName(t.c_str(), MAX_PATH, buff, &p);
+std::string fullfilename( const std::string &t ){
+	char buff[MAX_PATH+1],*p;
+	GetFullPathName( t.c_str(),MAX_PATH,buff,&p );
 	return std::string(buff);
 }
 
-std::string filenamepath(const std::string& t) {
-	char buff[MAX_PATH + 1], * p;
-	GetFullPathName(t.c_str(), MAX_PATH, buff, &p);
-	if(!p) return "";
-	*p = 0; return std::string(buff);
+std::string filenamepath( const std::string &t ){
+	char buff[MAX_PATH+1],*p;
+	GetFullPathName( t.c_str(),MAX_PATH,buff,&p );
+	if( !p ) return "";
+	*p=0;return std::string(buff);
 }
 
-std::string filenamefile(const std::string& t) {
-	char buff[MAX_PATH + 1], * p;
-	GetFullPathName(t.c_str(), MAX_PATH, buff, &p);
-	if(!p) return "";
-	return std::string(p);
+std::string filenamefile( const std::string &t ){
+	char buff[MAX_PATH+1],*p;
+	GetFullPathName( t.c_str(),MAX_PATH,buff,&p );
+	if( !p ) return "";
+	return std::string( p );
 }
 
-const int MIN_SIZE = 256;
+const int MIN_SIZE=256;
 
-qstreambuf::qstreambuf() {
-	buf = d_new char[MIN_SIZE];
-	setg(buf, buf, buf);
-	setp(buf, buf, buf + MIN_SIZE);
+qstreambuf::qstreambuf(){
+	buf=d_new char[MIN_SIZE];
+	setg( buf,buf,buf );
+	setp( buf,buf,buf+MIN_SIZE );
 }
 
-qstreambuf::~qstreambuf() {
+qstreambuf::~qstreambuf(){
 	delete buf;
 }
 
-int qstreambuf::size() {
-	return pptr() - gptr();
+int qstreambuf::size(){
+	return pptr()-gptr();
 }
 
-char* qstreambuf::data() {
+char *qstreambuf::data(){
 	return gptr();
 }
 
-qstreambuf::int_type qstreambuf::underflow() {
-	if(gptr() == egptr()) {
-		if(gptr() == pptr()) return traits_type::eof();
-		setg(gptr(), gptr(), pptr());
+qstreambuf::int_type qstreambuf::underflow(){
+	if( gptr()==egptr() ){
+		if( gptr()==pptr() ) return traits_type::eof();
+		setg( gptr(),gptr(),pptr() );
 	}
 
-	return traits_type::to_int_type(*gptr());
+	return traits_type::to_int_type( *gptr() );
 }
 
-qstreambuf::int_type qstreambuf::overflow(qstreambuf::int_type c) {
-	if(c == traits_type::eof()) return c;
+qstreambuf::int_type qstreambuf::overflow( qstreambuf::int_type c ){
+	if( c==traits_type::eof() ) return c;
 
-	if(pptr() == epptr()) {
-		int sz = size();
-		int n_sz = sz * 2; if(n_sz < MIN_SIZE) n_sz = MIN_SIZE;
-		char* n_buf = d_new char[n_sz];
-		memcpy(n_buf, gptr(), sz);
-		delete buf; buf = n_buf;
-		setg(buf, buf, buf + sz);
-		setp(buf + sz, buf + sz, buf + n_sz);
+	if( pptr()==epptr() ){
+		int sz=size();
+		int n_sz=sz*2;if( n_sz<MIN_SIZE ) n_sz=MIN_SIZE;
+		char *n_buf=d_new char[ n_sz ];
+		memcpy( n_buf,gptr(),sz );
+		delete buf;buf=n_buf;
+		setg( buf,buf,buf+sz );
+		setp( buf+sz,buf+sz,buf+n_sz );
 	}
 
-	*pptr() = traits_type::to_char_type(c);
-	pbump(1); return traits_type::not_eof(c);
+	*pptr()=traits_type::to_char_type( c );
+	pbump( 1 );return traits_type::not_eof( c );
 }

@@ -15,62 +15,74 @@ static std::vector<Object*> bones;
 static bool collapse;
 static bool animonly;
 
-static int swap_endian(int n) {
+static int swap_endian(int n)
+{
 	return ((n & 0xff) << 24) | ((n & 0xff00) << 8) | ((n & 0xff0000) >> 8) | ((n & 0xff000000) >> 24);
 }
 
-static void clear() {
+static void clear()
+{
 	bones.clear();
 	brushes.clear();
 	textures.clear();
 	chunk_stack.clear();
 }
 
-static int readChunk() {
+static int readChunk()
+{
 	int header[2];
 	if(fread(header, 8, 1, in) < 1) return 0;
 	chunk_stack.push_back(ftell(in) + header[1]);
 	return swap_endian(header[0]);
 }
 
-static void exitChunk() {
+static void exitChunk()
+{
 	fseek(in, chunk_stack.back(), SEEK_SET);
 	chunk_stack.pop_back();
 }
 
-static int chunkSize() {
+static int chunkSize()
+{
 	return chunk_stack.back() - ftell(in);
 }
 
-static void read(void* buf, int n) {
+static void read(void* buf, int n)
+{
 	fread(buf, n, 1, in);
 }
 
-static void skip(int n) {
+static void skip(int n)
+{
 	fseek(in, n, SEEK_CUR);
 }
 
-static int readInt() {
+static int readInt()
+{
 	int n;
 	read(&n, 4);
 	return n;
 }
 
-static void readIntArray(int t[], int n) {
+static void readIntArray(int t[], int n)
+{
 	read(t, n * 4);
 }
 
-static float readFloat() {
+static float readFloat()
+{
 	float n;
 	read(&n, 4);
 	return n;
 }
 
-static void readFloatArray(float t[], int n) {
+static void readFloatArray(float t[], int n)
+{
 	read(t, n * 4);
 }
 
-static void readColor(unsigned* t) {
+static void readColor(unsigned* t)
+{
 	float r = readFloat(); if(r < 0) r = 0; else if(r > 1) r = 1;
 	float g = readFloat(); if(g < 0) g = 0; else if(g > 1) g = 1;
 	float b = readFloat(); if(b < 0) b = 0; else if(b > 1) b = 1;
@@ -78,9 +90,11 @@ static void readColor(unsigned* t) {
 	*t = (int(a * 255) << 24) | (int(r * 255) << 16) | (int(g * 255) << 8) | int(b * 255);
 }
 
-static std::string readString() {
+static std::string readString()
+{
 	std::string t;
-	for(;;) {
+	for(;;)
+	{
 		char c;
 		read(&c, 1);
 		if(!c) return t;
@@ -88,8 +102,10 @@ static std::string readString() {
 	}
 }
 
-static void readTextures() {
-	while(chunkSize()) {
+static void readTextures()
+{
+	while(chunkSize())
+	{
 		std::string name = readString();
 		int flags = readInt();
 		int blend = readInt();
@@ -112,12 +128,14 @@ static void readTextures() {
 	}
 }
 
-static void readBrushes() {
+static void readBrushes()
+{
 	int n_texs = readInt();
 
 	int tex_id[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
 
-	while(chunkSize()) {
+	while(chunkSize())
+	{
 		std::string name = readString();
 		float col[4];
 		readFloatArray(col, 4);
@@ -134,7 +152,8 @@ static void readBrushes() {
 		bru.setBlend(blend);
 		bru.setFX(fx);
 
-		for(int k = 0; k < 8; ++k) {
+		for(int k = 0; k < 8; ++k)
+		{
 			if(tex_id[k] < 0) continue;
 			bru.setTexture(k, textures[tex_id[k]], 0);
 		}
@@ -143,7 +162,8 @@ static void readBrushes() {
 	}
 }
 
-static int readVertices() {
+static int readVertices()
+{
 
 	int flags = readInt();
 	int tc_sets = readInt();
@@ -152,15 +172,19 @@ static int readVertices() {
 	float tc[4] = { 0 };
 
 	Surface::Vertex t;
-	while(chunkSize()) {
+	while(chunkSize())
+	{
 		readFloatArray(t.coords, 3);
-		if(flags & 1) {
+		if(flags & 1)
+		{
 			readFloatArray(t.normal, 3);
 		}
-		if(flags & 2) {
+		if(flags & 2)
+		{
 			readColor(&t.color);
 		}
-		for(int k = 0; k < tc_sets; ++k) {
+		for(int k = 0; k < tc_sets; ++k)
+		{
 			readFloatArray(tc, tc_size);
 			if(k < 2) memcpy(t.tex_coords[k], tc, 8);
 		}
@@ -170,20 +194,25 @@ static int readVertices() {
 	return flags;
 }
 
-static void readTriangles() {
+static void readTriangles()
+{
 	int brush_id = readInt();
 	Brush b = brush_id >= 0 ? brushes[brush_id] : Brush();
-	while(chunkSize()) {
+	while(chunkSize())
+	{
 		int verts[3];
 		readIntArray(verts, 3);
 		MeshLoader::addTriangle(verts, b);
 	}
 }
 
-static int readMesh() {
+static int readMesh()
+{
 	int flags = 0;
-	while(chunkSize()) {
-		switch(readChunk()) {
+	while(chunkSize())
+	{
+		switch(readChunk())
+		{
 			case 'VRTS':
 				flags = readVertices();
 				break;
@@ -196,7 +225,8 @@ static int readMesh() {
 	return flags;
 }
 
-static Object* readBone() {
+static Object* readBone()
+{
 
 #ifdef SHOW_BONES
 	Brush b;
@@ -214,7 +244,8 @@ static Object* readBone() {
 
 	bones.push_back(bone);
 
-	while(chunkSize()) {
+	while(chunkSize())
+	{
 		int vert = readInt();
 		float weight = readFloat();
 		MeshLoader::addBone(vert, weight, bones.size());
@@ -222,21 +253,26 @@ static Object* readBone() {
 	return bone;
 }
 
-static void readKeys(Animation& anim) {
+static void readKeys(Animation& anim)
+{
 	int flags = readInt();
-	while(chunkSize()) {
+	while(chunkSize())
+	{
 		int frame = readInt();
-		if(flags & 1) {
+		if(flags & 1)
+		{
 			float pos[3];
 			readFloatArray(pos, 3);
 			anim.setPositionKey(frame, Vector(pos[0], pos[1], pos[2]));
 		}
-		if(flags & 2) {
+		if(flags & 2)
+		{
 			float scl[3];
 			readFloatArray(scl, 3);
 			anim.setScaleKey(frame, Vector(scl[0], scl[1], scl[2]));
 		}
-		if(flags & 4) {
+		if(flags & 4)
+		{
 			float rot[4];
 			readFloatArray(rot, 4);
 			anim.setRotationKey(frame, Quat(rot[0], Vector(rot[1], rot[2], rot[3])));
@@ -244,7 +280,8 @@ static void readKeys(Animation& anim) {
 	}
 }
 
-static Object* readObject(Object* parent) {
+static Object* readObject(Object* parent)
+{
 
 	Object* obj = 0;
 
@@ -259,8 +296,10 @@ static Object* readObject(Object* parent) {
 	MeshModel* mesh = 0;
 	int mesh_flags, mesh_brush;
 
-	while(chunkSize()) {
-		switch(readChunk()) {
+	while(chunkSize())
+	{
+		switch(readChunk())
+		{
 			case 'MESH':
 				MeshLoader::beginMesh();
 				obj = mesh = d_new MeshModel();
@@ -295,19 +334,22 @@ static Object* readObject(Object* parent) {
 	obj->setLocalRotation(Quat(rot[0], Vector(rot[1], rot[2], rot[3])));
 	obj->setAnimation(keys);
 
-	if(mesh) {
+	if(mesh)
+	{
 		MeshLoader::endMesh(mesh);
 		if(!(mesh_flags & 1)) mesh->updateNormals();
 		if(mesh_brush != -1) mesh->setBrush(brushes[mesh_brush]);
 	}
 
-	if(mesh && bones.size()) {
+	if(mesh && bones.size())
+	{
 		bones.insert(bones.begin(), mesh);
 		mesh->setAnimator(d_new Animator(bones, anim_len));
 		mesh->createBones();
 		bones.clear();
 	}
-	else if(anim_len) {
+	else if(anim_len)
+	{
 		obj->setAnimator(d_new Animator(obj, anim_len));
 	}
 
@@ -316,7 +358,8 @@ static Object* readObject(Object* parent) {
 	return obj;
 }
 
-MeshModel* Loader_B3D::load(const std::string& f, const Transform& conv, int hint) {
+MeshModel* Loader_B3D::load(const std::string& f, const Transform& conv, int hint)
+{
 
 	collapse = !!(hint & MeshLoader::HINT_COLLAPSE);
 	animonly = !!(hint & MeshLoader::HINT_ANIMONLY);
@@ -327,20 +370,24 @@ MeshModel* Loader_B3D::load(const std::string& f, const Transform& conv, int hin
 	::clear();
 
 	int tag = readChunk();
-	if(tag != 'BB3D') {
+	if(tag != 'BB3D')
+	{
 		fclose(in);
 		return 0;
 	}
 
 	int version = readInt();
-	if(version > 1) {
+	if(version > 1)
+	{
 		fclose(in);
 		return 0;
 	}
 
 	Object* obj = 0;
-	while(chunkSize()) {
-		switch(readChunk()) {
+	while(chunkSize())
+	{
+		switch(readChunk())
+		{
 			case 'TEXS':
 				readTextures();
 				break;

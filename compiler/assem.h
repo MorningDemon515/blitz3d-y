@@ -4,12 +4,12 @@
 
 #include "..\linker\linker.h"
 
-class Assem {
+class Assem{
 public:
-	std::istream& in;
-	Module* mod;
-	Assem(std::istream& in, Module* mod) :in(in), mod(mod) {}
-	virtual void assemble() = 0;
+	std::istream &in;
+	Module *mod;
+	Assem(std::istream &in,Module *mod ):in( in ),mod( mod ){}
+	virtual void assemble()=0;
 };
 
 #endif

@@ -12,19 +12,19 @@
 
 #include "../gxruntime/gxutf8.h"
 
-class DummyDebugger : public Debugger {
+class DummyDebugger : public Debugger{
 public:
-	virtual void debugRun() {}
-	virtual void debugStop() {}// bbruntime_panic(0); }
-	virtual void debugStmt(int srcpos, const char* file) {}
-	virtual void debugEnter(void* frame, void* env, const char* func) {}
-	virtual void debugLeave() {}
-	virtual void debugLog(const char* msg) {}
-	virtual void debugMsg(const char* e, bool serious) {
-		if(serious) MessageBoxW(0, UTF8::convertToUtf16(e).c_str(), L"Catastrophic Error!", MB_OK | MB_TOPMOST | MB_SETFOREGROUND);
+	virtual void debugRun(){}
+	virtual void debugStop(){}// bbruntime_panic(0); }
+	virtual void debugStmt( int srcpos,const char *file ){}
+	virtual void debugEnter( void *frame,void *env,const char *func ){}
+	virtual void debugLeave(){}
+	virtual void debugLog( const char *msg ){}
+	virtual void debugMsg( const char *e,bool serious ){
+		if( serious ) MessageBoxW( 0,UTF8::convertToUtf16(e).c_str(),L"Catastrophic Error!",MB_OK|MB_TOPMOST|MB_SETFOREGROUND );
 	}
-	virtual void debugSys(void* msg) {}
-	virtual void internalLog(const char* msg) {}
+	virtual void debugSys(void* msg) { }
+	virtual void internalLog(const char* msg) { }
 };
 
 static HINSTANCE hinst;
@@ -32,40 +32,35 @@ static std::map<const char*, void*> syms;
 std::map<const char*, void*>::iterator sym_it;
 static gxRuntime* gx_runtime;
 
-//Allows userlibs to call DebugLog() and RuntimeError().
-//******************************************************
-__declspec(dllexport) void __cdecl BlitzDebugLog(const char* msg)
+static void rtSym(const char* sym, void* pc)
 {
-	if(gx_runtime) gx_runtime->debugLog(msg);
-}
-
-__declspec(dllexport) void __cdecl BlitzRuntimeError(const char* msg)
-{
-	bbruntime_panic(msg);
-}
-//******************************************************
-
-static void rtSym(const char* sym, void* pc) {
 	syms[sym] = pc;
 }
 
-static void killer() {
+static void killer()
+{
 	ExitProcess(-1);
 }
 
-static void _cdecl seTranslator(unsigned int u, EXCEPTION_POINTERS* pExp) {
-	switch(u) {
+static void _cdecl seTranslator(unsigned int u, EXCEPTION_POINTERS* pExp)
+{
+	switch(u)
+	{
 		case EXCEPTION_INT_DIVIDE_BY_ZERO:
 			bbruntime_panic("Integer divide by zero.");
 			break;
 		case EXCEPTION_ACCESS_VIOLATION:
-			if(ErrorMessagePool::memoryAccessViolation == 0) {
+			if(ErrorMessagePool::memoryAccessViolation == 0)
+			{
 				bbruntime_panic("Memory Access Violation!\nThe program attempted to read or write to a protected memory address.");
 			}
-			else {
+			else
+			{
 				std::string s = "";
-				for(int i = 0; i < ErrorMessagePool::size; i++) {
-					if(!ErrorMessagePool::memoryAccessViolation[i].empty()) {
+				for(int i = 0; i < ErrorMessagePool::size; i++)
+				{
+					if(!ErrorMessagePool::memoryAccessViolation[i].empty())
+					{
 						s = s + ErrorMessagePool::memoryAccessViolation[i] + "\n";
 					}
 				}
@@ -91,37 +86,45 @@ static void _cdecl seTranslator(unsigned int u, EXCEPTION_POINTERS* pExp) {
 	bbruntime_panic("Unknown runtime exception.");
 }
 
-int Runtime::version() {
+int Runtime::version()
+{
 	return VERSION;
 }
 
-const char* Runtime::nextSym() {
-	if(!syms.size()) {
+const char* Runtime::nextSym()
+{
+	if(!syms.size())
+	{
 		bbruntime_link(rtSym);
 		sym_it = syms.begin();
 	}
-	if(sym_it == syms.end()) {
+	if(sym_it == syms.end())
+	{
 		syms.clear(); return 0;
 	}
 	return (sym_it++)->first;
 }
 
-int Runtime::symValue(const char* sym) {
+int Runtime::symValue(const char* sym)
+{
 	std::map<const char*, void*>::iterator it = syms.find(sym);
 	if(it != syms.end()) return (int)it->second;
 	return -1;
 }
 
-void Runtime::startup(HINSTANCE h) {
+void Runtime::startup(HINSTANCE h)
+{
 	hinst = h;
 }
 
-void Runtime::shutdown() {
+void Runtime::shutdown()
+{
 	trackmem(false);
 	syms.clear();
 }
 
-void Runtime::execute(void (*pc)(), const char* args, Debugger* dbg) {
+void Runtime::execute(void (*pc)(), const char* args, Debugger* dbg)
+{
 
 	bool debug = !!dbg;
 
@@ -132,8 +135,8 @@ void Runtime::execute(void (*pc)(), const char* args, Debugger* dbg) {
 	trackmem(true);
 
 #ifndef _DEBUG
-	_se_translator_function old_trans = _set_se_translator(seTranslator);
-	_control87(_RC_NEAR | _PC_24 | _EM_INVALID | _EM_ZERODIVIDE | _EM_OVERFLOW | _EM_UNDERFLOW | _EM_INEXACT | _EM_DENORMAL, 0xfffff);
+	_se_translator_function old_trans=_set_se_translator( seTranslator );
+	_control87( _RC_NEAR|_PC_24|_EM_INVALID|_EM_ZERODIVIDE|_EM_OVERFLOW|_EM_UNDERFLOW|_EM_INEXACT|_EM_DENORMAL,0xfffff );
 #endif
 
 	//strip spaces from ends of args...
@@ -143,9 +146,13 @@ void Runtime::execute(void (*pc)(), const char* args, Debugger* dbg) {
 
 	//Fix the issue of NTF Mod clipping outside monitor boundaries in "fullscreen" mode when you have the system scale set to
 	//something different than 100%.
-	SetProcessDPIAware();
+	//************************************************************************************************************************
+	//BUG (?): Debugger window also scales back down. If set to the game thread only, the graphics cut out since it seems to run on
+	//the debugger thread.
+	SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_SYSTEM_AWARE);
 
-	if(gx_runtime = gxRuntime::openRuntime(hinst, params, dbg)) {
+	if(gx_runtime = gxRuntime::openRuntime(hinst, params, dbg))
+	{
 		bbruntime_run(gx_runtime, pc, debug);
 
 		gxRuntime* t = gx_runtime;
@@ -154,29 +161,34 @@ void Runtime::execute(void (*pc)(), const char* args, Debugger* dbg) {
 	}
 
 #ifndef _DEBUG
-	_control87(_CW_DEFAULT, 0xfffff);
-	_set_se_translator(old_trans);
+	_control87( _CW_DEFAULT,0xfffff );
+	_set_se_translator( old_trans );
 #endif
 }
 
-void Runtime::asyncStop() {
+void Runtime::asyncStop()
+{
 	if(gx_runtime) gx_runtime->asyncStop();
 }
 
-void Runtime::asyncRun() {
+void Runtime::asyncRun()
+{
 	if(gx_runtime) gx_runtime->asyncRun();
 }
 
-void Runtime::asyncEnd() {
+void Runtime::asyncEnd()
+{
 	if(gx_runtime) gx_runtime->asyncEnd();
 }
 
-void Runtime::checkmem(std::streambuf* buf) {
+void Runtime::checkmem(std::streambuf* buf)
+{
 	std::ostream out(buf);
 	::checkmem(out);
 }
 
-Runtime* _cdecl runtimeGetRuntime() {
+Runtime* _cdecl runtimeGetRuntime()
+{
 	static Runtime runtime;
 	return &runtime;
 }
@@ -188,17 +200,20 @@ static std::map<std::string, int> module_syms;
 static std::map<std::string, int> runtime_syms;
 static Runtime* runtime;
 
-static void fail() {
+static void fail()
+{
 	MessageBox(0, "Unable to run Blitz Basic module.", 0, 0);
 	ExitProcess(-1);
 }
 
-struct Sym {
+struct Sym
+{
 	std::string name;
 	int value;
 };
 
-static Sym getSym(void** p) {
+static Sym getSym(void** p)
+{
 	Sym sym;
 	char* t = (char*)*p;
 	while(char c = *t++) sym.name += c;
@@ -206,7 +221,8 @@ static Sym getSym(void** p) {
 	*p = t + 4; return sym;
 }
 
-static int findSym(const std::string& t) {
+static int findSym(const std::string& t)
+{
 	std::map<std::string, int>::iterator it;
 
 	it = module_syms.find(t);
@@ -220,13 +236,16 @@ static int findSym(const std::string& t) {
 	return 0;
 }
 
-static void link() {
+static void link()
+{
 
-	while(const char* sc = runtime->nextSym()) {
+	while(const char* sc = runtime->nextSym())
+	{
 
 		std::string t(sc);
 
-		if(t[0] == '_') {
+		if(t[0] == '_')
+		{
 			runtime_syms["_" + t] = runtime->symValue(sc);
 			continue;
 		}
@@ -235,7 +254,8 @@ static void link() {
 
 		if(!isalnum(t[0])) t = t.substr(1);
 
-		for(int k = 0; k < t.size(); ++k) {
+		for(int k = 0; k < t.size(); ++k)
+		{
 			if(isalnum(t[k]) || t[k] == '_') continue;
 			t = t.substr(0, k); break;
 		}
@@ -258,14 +278,16 @@ static void link() {
 	int k, cnt;
 
 	cnt = *(int*)p; p = (int*)p + 1;
-	for(k = 0; k < cnt; ++k) {
+	for(k = 0; k < cnt; ++k)
+	{
 		Sym sym = getSym(&p);
 		if(sym.value < (int)module_pc || sym.value >= (int)module_pc + sz) fail();
 		module_syms[sym.name] = sym.value;
 	}
 
 	cnt = *(int*)p; p = (int*)p + 1;
-	for(k = 0; k < cnt; ++k) {
+	for(k = 0; k < cnt; ++k)
+	{
 		Sym sym = getSym(&p);
 		int* pp = (int*)sym.value;
 		int dest = findSym(sym.name);
@@ -273,7 +295,8 @@ static void link() {
 	}
 
 	cnt = *(int*)p; p = (int*)p + 1;
-	for(k = 0; k < cnt; ++k) {
+	for(k = 0; k < cnt; ++k)
+	{
 		Sym sym = getSym(&p);
 		int* pp = (int*)sym.value;
 		int dest = findSym(sym.name);
@@ -287,11 +310,13 @@ static void link() {
 extern "C" _declspec(dllexport) int _stdcall bbWinMain();
 extern "C" BOOL _stdcall _DllMainCRTStartup(HANDLE, DWORD, LPVOID);
 
-bool WINAPI DllMain(HANDLE module, DWORD reason, void* reserved) {
+bool WINAPI DllMain(HANDLE module, DWORD reason, void* reserved)
+{
 	return TRUE;
 }
 
-int __stdcall bbWinMain() {
+int __stdcall bbWinMain()
+{
 
 	HINSTANCE inst = GetModuleHandle(0);
 
@@ -311,16 +336,20 @@ int __stdcall bbWinMain() {
 	//get cmd_line and params
 	std::string cmd = GetCommandLine(), params;
 	while(cmd.size() && cmd[0] == ' ') cmd = cmd.substr(1);
-	if(cmd.find('\"') == 0) {
+	if(cmd.find('\"') == 0)
+	{
 		int n = cmd.find('\"', 1);
-		if(n != std::string::npos) {
+		if(n != std::string::npos)
+		{
 			params = cmd.substr(n + 1);
 			cmd = cmd.substr(1, n - 1);
 		}
 	}
-	else {
+	else
+	{
 		int n = cmd.find(' ');
-		if(n != std::string::npos) {
+		if(n != std::string::npos)
+		{
 			params = cmd.substr(n + 1);
 			cmd = cmd.substr(0, n);
 		}

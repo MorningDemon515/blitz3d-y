@@ -1,1 +1,1 @@
-D:\Blitz3D Soure Code\blitz3d-cb\Blitz3D\freetype\objs\Win32\Release Static\freetype.lib
+D:\Blitz3D Soure Code\blitz3d-cb\Blitz3D-VaneBrain\freetype\objs\Win32\Release Static\freetype.lib

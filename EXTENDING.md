@@ -1,4 +1,4 @@
-# Extending Blitz3D TSS
+# Blitz3DY's libs guide
 Extending the engine is done by a "Userlib", which is a pair of files:
 
 * A `.dll` file containing the userlib's code.

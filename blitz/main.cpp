@@ -25,23 +25,27 @@
 
 #undef environ
 
-static std::string verstr(int ver) {
+static std::string verstr(int ver)
+{
 	return itoa((ver & 65535) / 1000) + "." + itoa((ver & 65535) % 1000);
 }
 
 
-static void showInfo() {
+static void showInfo()
+{
 	std::cout << std::endl;
-	std::cout << "BlitzCC v" << verstr(VERSION) << std::endl;
-	std::cout << "(C)opyright 2000-2003 Blitz Research Ltd, 2022 Third Subdivision Studios" << std::endl;
-	std::cout << "------------------------------------------------------------------------" << std::endl;
+	std::cout << "BlitzCC V" << verstr(VERSION) << std::endl;
+	std::cout << "(C)opyright 2000-2003 Blitz Research Ltd" << std::endl;
+	std::cout << "----------------------------------------" << std::endl;
 }
 
-static void showUsage() {
+static void showUsage()
+{
 	std::cout << "Usage: blitzcc [-h|-q|+q|-c|-d|-k|+k|-nlaa|-v|-o exefile] [sourcefile.bb]" << std::endl;
 }
 
-static void showHelp() {
+static void showHelp()
+{
 	showUsage();
 	std::cout << "-h         : show this help" << std::endl;
 	std::cout << "-q         : quiet mode" << std::endl;
@@ -55,16 +59,19 @@ static void showHelp() {
 	std::cout << "-o exefile : generate executable" << std::endl;
 }
 
-static void err(const std::string& t) {
+static void err(const std::string& t)
+{
 	std::cout << t << std::endl;
 	exit(-1);
 }
 
-static void usageErr() {
+static void usageErr()
+{
 	err("Usage error.");
 }
 
-static std::string quickHelp(const std::string& kw) {
+static std::string quickHelp(const std::string& kw)
+{
 
 	Environ* e = runtimeEnviron;
 	Decl* d = e->funcDecls->findDecl(tolower(kw));
@@ -78,7 +85,8 @@ static std::string quickHelp(const std::string& kw) {
 
 	if(f->returnType != Type::void_type) t += "( ";
 
-	for(int k = 0; k < f->params->size(); ++k) {
+	for(int k = 0; k < f->params->size(); ++k)
+	{
 		std::string s;
 		if(k) s += ',';
 		Decl* p = f->params->decls[k]; s += p->name;
@@ -89,18 +97,22 @@ static std::string quickHelp(const std::string& kw) {
 		t += s;
 	}
 
-	if(f->returnType != Type::void_type) {
+	if(f->returnType != Type::void_type)
+	{
 		t += f->params->size() ? " )" : ")";
 	}
 	return t;
 }
 
-static void dumpKeys(bool lang, bool mod, bool help) {
+static void dumpKeys(bool lang, bool mod, bool help)
+{
 
-	if(lang) {
+	if(lang)
+	{
 		std::map<std::string, int>::iterator it;
 		std::map<std::string, int>& keywords = Toker::getKeywords();
-		for(it = keywords.begin(); it != keywords.end(); ++it) {
+		for(it = keywords.begin(); it != keywords.end(); ++it)
+		{
 			if(it->first.find(' ') != std::string::npos) continue;
 			std::cout << it->first << std::endl;
 		}
@@ -108,13 +120,16 @@ static void dumpKeys(bool lang, bool mod, bool help) {
 
 	if(!mod) return;
 
-	for(int k = 0; k < keyWords.size(); ++k) {
+	for(int k = 0; k < keyWords.size(); ++k)
+	{
 		std::string t = keyWords[k];
 
 		if(t[0] == '_')	continue;
 		if(!isalpha(t[0])) t = t.substr(1);
-		for(int n = 0; n < t.size(); ++n) {
-			if(!isalnum(t[n]) && t[n] != '_') {
+		for(int n = 0; n < t.size(); ++n)
+		{
+			if(!isalnum(t[n]) && t[n] != '_')
+			{
 				t = t.substr(0, n);
 				break;
 			}
@@ -124,14 +139,16 @@ static void dumpKeys(bool lang, bool mod, bool help) {
 	}
 }
 
-static void versInfo() {
+static void versInfo()
+{
 	std::cout << "Compiler version: " << verstr(bcc_ver) << std::endl;
 	std::cout << "Runtime version: " << verstr(run_ver) << std::endl;
 	std::cout << "Debugger version: " << verstr(dbg_ver) << std::endl;
 	std::cout << "Linker version: " << verstr(lnk_ver) << std::endl;
 }
 
-int _cdecl main(int argc, char* argv[]) {
+int _cdecl main(int argc, char* argv[])
+{
 	std::string in_file, out_file, args;
 
 	bool debug = false, quiet = false, veryquiet = false, compileonly = false;
@@ -139,49 +156,63 @@ int _cdecl main(int argc, char* argv[]) {
 	bool versinfo = false;
 	bool nolaa = false;
 
-	for(int k = 1; k < argc; ++k) {
+	for(int k = 1; k < argc; ++k)
+	{
 		std::string t = argv[k];
 
 		t = tolower(t);
 
-		if(t == "-h") {
+		if(t == "-h")
+		{
 			showhelp = true;
 		}
-		else if(t == "-a") {
+		else if(t == "-a")
+		{
 			dumpasm = true;
 		}
-		else if(t == "-q") {
+		else if(t == "-q")
+		{
 			quiet = true;
 		}
-		else if(t == "+q") {
+		else if(t == "+q")
+		{
 			quiet = veryquiet = true;
 		}
-		else if(t == "-c") {
+		else if(t == "-c")
+		{
 			compileonly = true;
 		}
-		else if(t == "-d") {
+		else if(t == "-d")
+		{
 			debug = true;
 		}
-		else if(t == "-k") {
+		else if(t == "-k")
+		{
 			dumpkeys = true;
 		}
-		else if(t == "+k") {
+		else if(t == "+k")
+		{
 			dumpkeys = dumphelp = true;
 		}
-		else if(t == "-v") {
+		else if(t == "-v")
+		{
 			versinfo = true;
 		}
-		else if(t == "-o") {
+		else if(t == "-o")
+		{
 			if(out_file.size() || k == argc - 1) usageErr();
 			out_file = argv[++k];
 		}
-		else if(t == "-nlaa") {
+		else if(t == "-nlaa")
+		{
 			nolaa = true;
 		}
-		else {
+		else
+		{
 			if(in_file.size() || t[0] == '-' || t[0] == '+') usageErr();
 			in_file = argv[k];
-			for(++k; k < argc; ++k) {
+			for(++k; k < argc; ++k)
+			{
 				std::string t = argv[k];
 				if(t.find(' ') != std::string::npos) t = '\"' + t + '\"';
 				if(args.size()) args += ' ';
@@ -191,7 +222,8 @@ int _cdecl main(int argc, char* argv[]) {
 	}
 
 	std::ifstream debugFile; debugFile.open("debug.txt", std::ios_base::in);
-	if(debugFile.good()) {
+	if (debugFile.good())
+	{
 		char* tmpBuf = new char[1024];
 		debugFile.getline(tmpBuf, 1024);
 		in_file = tmpBuf;
@@ -209,7 +241,7 @@ int _cdecl main(int argc, char* argv[]) {
 		return 0;
 	}
 
-	if(out_file.size() && !in_file.size()) usageErr();
+	if( out_file.size() && !in_file.size() ) usageErr();
 
 	if(const char* er = openLibs()) err(er);
 
@@ -219,23 +251,26 @@ int _cdecl main(int argc, char* argv[]) {
 	if(dumpkeys) dumpKeys(true, true, dumphelp);
 	if(versinfo) versInfo();
 
-	if(!in_file.size()) return 0;
+	if( !in_file.size() ) return 0;
 
-	if(in_file[0] == '\"') {
+	if(in_file[0] == '\"')
+	{
 		if(in_file.size() < 3 || in_file[in_file.size() - 1] != '\"') usageErr();
 		in_file = in_file.substr(1, in_file.size() - 2);
 	}
 
 	std::ifstream in(in_file.c_str());
 	if(!in) err("Unable to open input file.");
-	if(!quiet) {
+	if(!quiet)
+	{
 		showInfo();
 		std::cout << "Compiling \"" << in_file << "\"" << std::endl;
 	}
 
 	int n = in_file.rfind('/');
 	if(n == std::string::npos) n = in_file.rfind('\\');
-	if(n != std::string::npos) {
+	if(n != std::string::npos)
+	{
 		if(!n || in_file[n - 1] == ':') ++n;
 		SetCurrentDirectory(in_file.substr(0, n).c_str());
 	}
@@ -244,7 +279,8 @@ int _cdecl main(int argc, char* argv[]) {
 	Environ* environ = 0;
 	Module* module = 0;
 
-	try {
+	try
+	{
 		//parse
 		if(!veryquiet) std::cout << "Parsing..." << std::endl;
 		Toker toker(in);
@@ -263,7 +299,8 @@ int _cdecl main(int argc, char* argv[]) {
 
 		prog->translate(&codegen, userFuncs);
 
-		if(dumpasm) {
+		if(dumpasm)
+		{
 			std::cout << std::endl << std::string(qbuf.data(), qbuf.size()) << std::endl;
 		}
 
@@ -274,35 +311,41 @@ int _cdecl main(int argc, char* argv[]) {
 		assem.assemble();
 
 	}
-	catch(Ex& x) {
+	catch(Ex& x)
+	{
 
 		std::string file = '\"' + x.file + '\"';
 		int row = ((x.pos >> 16) & 65535) + 1, col = (x.pos & 65535) + 1;
-		std::cout << file << ":" << row << ":" << col << ":" << x.ex << std::endl;
+		std::cout << file << ":" << row << ":" << col << ":" << row << ":" << col << ":" << x.ex << std::endl;
 		exit(-1);
 	}
 
 	delete prog;
 
-	if(out_file.size()) {
+	if(out_file.size())
+	{
 		if(!veryquiet) std::cout << "Creating executable \"" << out_file << "\"..." << std::endl;
 
-		if(!module->createExe(out_file.c_str(), (home + "/bin/runtime.dll").c_str(), nolaa)) {
+		if (!module->createExe(out_file.c_str(), (home + "/bin/runtime.dll").c_str(), nolaa))
+		{
 			err("Error creating executable!");
 		}
 
-		if(!veryquiet) std::cout << "Executable created succesfully." << std::endl;
+		if (!veryquiet) std::cout << "Executable created succesfully." << std::endl;
 	}
-	else if(!compileonly) {
+	else if(!compileonly)
+	{
 		void* entry = module->link(runtimeModule);
 		if(!entry) return 0;
 
 		HMODULE dbgHandle = 0;
 		Debugger* debugger = 0;
 
-		if(debug) {
+		if(debug)
+		{
 			dbgHandle = LoadLibrary((home + "/bin/debugger.dll").c_str());
-			if(dbgHandle) {
+			if(dbgHandle)
+			{
 				typedef Debugger* (_cdecl* GetDebugger)(Module*, Environ*);
 				GetDebugger gd = (GetDebugger)GetProcAddress(dbgHandle, "debuggerGetDebugger");
 				if(gd) debugger = gd(module, environ);

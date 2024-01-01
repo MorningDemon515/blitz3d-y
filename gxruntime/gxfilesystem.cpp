@@ -4,61 +4,73 @@
 
 static std::set<gxDir*> dir_set;
 
-gxFileSystem::gxFileSystem() {
+gxFileSystem::gxFileSystem()
+{
 	dir_set.clear();
 }
 
-gxFileSystem::~gxFileSystem() {
+gxFileSystem::~gxFileSystem()
+{
 	while(dir_set.size()) closeDir(*dir_set.begin());
 }
 
-bool gxFileSystem::createDir(const std::string& dir) {
+bool gxFileSystem::createDir(const std::string& dir)
+{
 	return CreateDirectory(dir.c_str(), 0) ? true : false;
 }
 
-bool gxFileSystem::deleteDir(const std::string& dir) {
+bool gxFileSystem::deleteDir(const std::string& dir)
+{
 	return RemoveDirectory(dir.c_str()) ? true : false;
 }
 
-bool gxFileSystem::createFile(const std::string& file) {
+bool gxFileSystem::createFile(const std::string& file)
+{
 	HANDLE h = CreateFile(file.c_str(),
-		GENERIC_ALL,
-		0,
-		0,
-		CREATE_NEW,
-		FILE_ATTRIBUTE_NORMAL,
-		0);
-	if(h) {
+						  GENERIC_ALL,
+						  0,
+						  0,
+						  CREATE_NEW,
+						  FILE_ATTRIBUTE_NORMAL,
+						  0);
+	if(h)
+	{
 		CloseHandle(h);
 		return true;
 	}
 	else return false;
 }
 
-bool gxFileSystem::deleteFile(const std::string& file) {
+bool gxFileSystem::deleteFile(const std::string& file)
+{
 	return DeleteFile(file.c_str()) ? true : false;
 }
 
-bool gxFileSystem::copyFile(const std::string& src, const std::string& dest) {
+bool gxFileSystem::copyFile(const std::string& src, const std::string& dest)
+{
 	return CopyFile(src.c_str(), dest.c_str(), false) ? true : false;
 }
 
-bool gxFileSystem::renameFile(const std::string& src, const std::string& dest) {
+bool gxFileSystem::renameFile(const std::string& src, const std::string& dest)
+{
 	return MoveFile(src.c_str(), dest.c_str()) ? true : false;
 }
 
-bool gxFileSystem::setCurrentDir(const std::string& dir) {
+bool gxFileSystem::setCurrentDir(const std::string& dir)
+{
 	return SetCurrentDirectory(dir.c_str()) ? true : false;
 }
 
-std::string gxFileSystem::getCurrentDir()const {
+std::string gxFileSystem::getCurrentDir()const
+{
 	char buff[MAX_PATH];
 	if(!GetCurrentDirectory(MAX_PATH, buff)) return "";
 	std::string t = buff; if(t.size() && t[t.size() - 1] != '\\') t += '\\';
 	return t;
 }
 
-int gxFileSystem::getFileSize(const std::string& name)const {
+int gxFileSystem::getFileSize(const std::string& name)const
+{
 	/*WIN32_FIND_DATA findData;
 	HANDLE h=FindFirstFile( name.c_str(),&findData );
 	if( h==INVALID_HANDLE_VALUE ) return 0;
@@ -67,29 +79,34 @@ int gxFileSystem::getFileSize(const std::string& name)const {
 	return std::filesystem::file_size(name);
 }
 
-int gxFileSystem::getFileType(const std::string& name)const {
+int gxFileSystem::getFileType(const std::string& name)const
+{
 	DWORD t = GetFileAttributes(name.c_str());
 	return t == -1 ? FILE_TYPE_NONE :
 		(t & FILE_ATTRIBUTE_DIRECTORY ? FILE_TYPE_DIR : FILE_TYPE_FILE);
 }
 
-gxDir* gxFileSystem::openDir(const std::string& name, int flags) {
+gxDir* gxFileSystem::openDir(const std::string& name, int flags)
+{
 	std::string t = name;
 	if(t[t.size() - 1] == '\\') t += "*";
 	else t += "\\*";
 	WIN32_FIND_DATA f;
 	HANDLE h = FindFirstFile(t.c_str(), &f);
-	if(h != INVALID_HANDLE_VALUE) {
+	if(h != INVALID_HANDLE_VALUE)
+	{
 		gxDir* d = d_new gxDir(h, f);
 		dir_set.insert(d);
 		return d;
 	}
 	return 0;
 }
-gxDir* gxFileSystem::verifyDir(gxDir* d) {
+gxDir* gxFileSystem::verifyDir(gxDir* d)
+{
 	return dir_set.count(d) ? d : 0;
 }
 
-void gxFileSystem::closeDir(gxDir* d) {
+void gxFileSystem::closeDir(gxDir* d)
+{
 	if(dir_set.erase(d)) delete d;
 }

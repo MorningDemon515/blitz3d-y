@@ -9,20 +9,24 @@ std::string* ErrorMessagePool::memoryAccessViolation = 0;
 int ErrorMessagePool::size = 0;
 
 
-void  bbEnd() {
+void  bbEnd()
+{
 	RTEX(0);
 }
-void  bbStop() {
+void  bbStop()
+{
 	gx_runtime->debugStop();
 	if(!gx_runtime->idle()) RTEX(0);
 }
 
-void  bbAppTitle(BBStr* ti, BBStr* cp) {
+void  bbAppTitle(BBStr* ti, BBStr* cp)
+{
 	gx_runtime->setTitle(*ti, *cp);
 	delete ti; delete cp;
 }
 
-void  bbRuntimeError(BBStr* str) {
+void  bbRuntimeError(BBStr* str)
+{
 	std::string t = *str; delete str;
 	if(t.size() > 255) t[255] = 0;
 	static char err[256];
@@ -30,96 +34,114 @@ void  bbRuntimeError(BBStr* str) {
 	RTEX(err);
 }
 
-void bbInitErrorMsgs(int number) {
+void bbInitErrorMsgs(int number)
+{
 	delete[] ErrorMessagePool::memoryAccessViolation;
 	ErrorMessagePool::memoryAccessViolation = new std::string[number];
 	ErrorMessagePool::size = number;
 }
 
-void bbSetErrorMsg(int pos, BBStr* str) {
-	if(ErrorMessagePool::memoryAccessViolation != 0 && pos < ErrorMessagePool::size) {
+void bbSetErrorMsg(int pos, BBStr* str)
+{
+	if(ErrorMessagePool::memoryAccessViolation != 0 && pos < ErrorMessagePool::size)
+	{
 		ErrorMessagePool::memoryAccessViolation[pos] = *str;
 	}
 	delete str;
 }
 
-int   bbExecFile(BBStr* f) {
+int   bbExecFile(BBStr* f)
+{
 	std::string t = *f; delete f;
 	int n = gx_runtime->execute(t);
 	if(!gx_runtime->idle()) RTEX(0);
 	return n;
 }
 
-void  bbDelay(int ms) {
+void  bbDelay(int ms)
+{
 	if(!gx_runtime->delay(ms)) RTEX(0);
 }
 
-int  bbMilliSecs() {
+int  bbMilliSecs()
+{
 	return gx_runtime->getMilliSecs();
 }
 
-BBStr* bbCommandLine() {
+BBStr* bbCommandLine()
+{
 	return d_new BBStr(gx_runtime->commandLine());
 }
 
-BBStr* bbSystemProperty(BBStr* p) {
+BBStr* bbSystemProperty(BBStr* p)
+{
 	std::string t = gx_runtime->systemProperty(*p);
 	delete p; return d_new BBStr(t);
 }
 
-BBStr* bbGetEnv(BBStr* env_var) {
+BBStr* bbGetEnv(BBStr* env_var)
+{
 	char* p = getenv(env_var->c_str());
 	BBStr* val = d_new BBStr(p ? p : "");
 	delete env_var;
 	return val;
 }
 
-void  bbSetEnv(BBStr* env_var, BBStr* val) {
+void  bbSetEnv(BBStr* env_var, BBStr* val)
+{
 	std::string t = *env_var + "=" + *val;
 	putenv(t.c_str());
 	delete env_var;
 	delete val;
 }
 
-gxTimer* bbCreateTimer(int hertz) {
+gxTimer* bbCreateTimer(int hertz)
+{
 	gxTimer* t = gx_runtime->createTimer(hertz);
 	return t;
 }
 
-int   bbWaitTimer(gxTimer* t) {
+int   bbWaitTimer(gxTimer* t)
+{
 	int n = t->wait();
 	if(!gx_runtime->idle()) RTEX(0);
 	return n;
 }
 
-void  bbFreeTimer(gxTimer* t) {
+void  bbFreeTimer(gxTimer* t)
+{
 	gx_runtime->freeTimer(t);
 }
 
-std::string utf16_to_utf8(std::u16string&& utf16_string) {
+std::string utf16_to_utf8(std::u16string&& utf16_string)
+{
 	std::wstring_convert<std::codecvt_utf8_utf16<int16_t>, int16_t> convert;
 	auto p = reinterpret_cast<const int16_t*>(utf16_string.data());
 	return convert.to_bytes(p, p + utf16_string.size());
 }
 
-BBStr* bbGetClipboardContents() {
+BBStr* bbGetClipboardContents()
+{
 	OpenClipboard(nullptr);
 	HANDLE data = GetClipboardData(CF_UNICODETEXT);
 	BBStr* str;
-	if(IsClipboardFormatAvailable(CF_UNICODETEXT)) {
+	if(IsClipboardFormatAvailable(CF_UNICODETEXT))
+	{
 		char16_t* pszText = static_cast<char16_t*>(GlobalLock(data));
 		std::u16string wtext(pszText);
 		GlobalUnlock(data);
 		str = d_new BBStr(utf16_to_utf8(std::move(wtext)));
 	}
-	else {
+	else
+	{
 		str = d_new BBStr("");
 	}
 	CloseClipboard();
 	return str;
 }
 
-void bbSetClipboardContents(BBStr* contents) {
+void bbSetClipboardContents(BBStr* contents)
+{
 	std::wstring chs = UTF8::convertToUtf16(contents->data());
 	HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, (chs.size() + 1) * sizeof(wchar_t));
 	memcpy(GlobalLock(hMem), chs.data(), (chs.size() + 1) * sizeof(wchar_t));
@@ -130,21 +152,25 @@ void bbSetClipboardContents(BBStr* contents) {
 	CloseClipboard();
 }
 
-void  bbDebugLog(BBStr* t) {
+void  bbDebugLog(BBStr* t)
+{
 	gx_runtime->debugLog(t->c_str());
 	delete t;
 }
 
-void  _bbDebugStmt(int pos, const char* file) {
+void  _bbDebugStmt(int pos, const char* file)
+{
 	gx_runtime->debugStmt(pos, file);
 	if(!gx_runtime->idle()) RTEX(0);
 }
 
-void  _bbDebugEnter(void* frame, void* env, const char* func) {
+void  _bbDebugEnter(void* frame, void* env, const char* func)
+{
 	gx_runtime->debugEnter(frame, env, func);
 }
 
-void  _bbDebugLeave() {
+void  _bbDebugLeave()
+{
 	gx_runtime->debugLeave();
 }
 
@@ -187,7 +213,8 @@ bool blitz3d_create();
 bool blitz3d_destroy();
 void blitz3d_link(void (*rtSym)(const char* sym, void* pc));
 
-void bbruntime_link(void (*rtSym)(const char* sym, void* pc)) {
+void bbruntime_link(void (*rtSym)(const char* sym, void* pc))
+{
 
 	rtSym("End", bbEnd);
 	rtSym("Stop", bbStop);
@@ -229,13 +256,15 @@ void bbruntime_link(void (*rtSym)(const char* sym, void* pc)) {
 }
 
 //start up error
-static void sue(const char* t) {
+static void sue(const char* t)
+{
 	std::string p = std::string("Startup Error: ") + t;
 	//gx_runtime->debugInfo(p.c_str());
 	gx_runtime->debugError(p.c_str());
 }
 
-bool bbruntime_create() {
+bool bbruntime_create()
+{
 	INIT(basic);
 	INIT(math);
 	INIT(string);
@@ -250,7 +279,8 @@ bool bbruntime_create() {
 	return true;
 }
 
-bool bbruntime_destroy() {
+bool bbruntime_destroy()
+{
 	userlibs_destroy();
 	blitz3d_destroy();
 	audio_destroy();
@@ -266,30 +296,36 @@ bool bbruntime_destroy() {
 	return true;
 }
 
-const char* bbruntime_run(gxRuntime* rt, void (*pc)(), bool dbg) {
+const char* bbruntime_run(gxRuntime* rt, void (*pc)(), bool dbg)
+{
 	debug = dbg;
 	gx_runtime = rt;
 
 	if(!bbruntime_create()) return "Unable to start program! A required module could not be started.";
 	const char* t = 0;
-	try {
+	try
+	{
 		if(!gx_runtime->idle()) RTEX(0);
 		pc();
 		gx_runtime->debugInfo("Program has ended.");
 	}
-	catch(bbEx x) {
+	catch(bbEx x)
+	{
 		t = x.err;
 	}
-	catch(std::exception e) {
+	catch(std::exception e)
+	{
 		t = e.what();
 	}
-	catch(...) {
+	catch(...)
+	{
 		t = "Unknown/non-standard exception thrown!";
 	}
 	bbruntime_destroy();
 	return t;
 }
 
-void bbruntime_panic(const char* err) {
+void bbruntime_panic(const char* err)
+{
 	RTEX(err);
 }

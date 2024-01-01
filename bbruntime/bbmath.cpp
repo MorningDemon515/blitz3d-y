@@ -31,43 +31,52 @@ float bbClamp(float v, float lo, float hi) { return std::clamp(v, lo, hi); }
 int	bbIsNaN(float n) { return isnan(n); }
 
 //return rand float from 0...1
-static inline float rnd() {
+static inline float rnd()
+{
 	rnd_state = RND_A * (rnd_state % RND_Q) - RND_R * (rnd_state / RND_Q);
 	if(rnd_state < 0) rnd_state += RND_M;
-	if(rnd_state == 0) {
+	if(rnd_state == 0)
+	{
 		rnd_state = RND_R;
 	}
 	return (rnd_state & 65535) / 65536.0f + (.5f / 65536.0f);
 }
 
-float bbRnd(float from, float to) {
+float bbRnd(float from, float to)
+{
 	return rnd() * (to - from) + from;
 }
 
-int bbRand(int from, int to) {
+int bbRand(int from, int to)
+{
 	if(to < from) std::swap(from, to);
 	return int(rnd() * (to - from + 1)) + from;
 }
 
-void bbSeedRnd(int seed) {
+void bbSeedRnd(int seed)
+{
 	seed &= 0x7fffffff;
 	rnd_state = seed ? seed : 1;
 }
 
-int  bbRndSeed() {
+int  bbRndSeed()
+{
 	return rnd_state;
 }
 
-bool math_create() {
+bool math_create()
+{
 	bbSeedRnd(0x1234);
 	return true;
 }
 
-bool math_destroy() {
+bool math_destroy()
+{
 	return true;
 }
 
-void math_link(void (*rtSym)(const char* sym, void* pc)) {
+void math_link(void (*rtSym)(const char* sym, void* pc))
+{
 	rtSym("#Sin#degrees", bbSin);
 	rtSym("#Cos#degrees", bbCos);
 	rtSym("#Tan#degrees", bbTan);

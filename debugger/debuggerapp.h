@@ -8,8 +8,8 @@
 	name='Microsoft.Windows.Common-Controls' version='6.0.0.0' \
 	processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
-class DebuggerApp : public CWinApp {
-	MainFrame* main_frame;
+class DebuggerApp : public CWinApp{
+	MainFrame *main_frame;
 
 public:
 	~DebuggerApp();
@@ -17,7 +17,7 @@ public:
 	virtual BOOL InitInstance();
 	virtual int ExitInstance();
 
-	MainFrame* mainFrame();
+	MainFrame *mainFrame();
 };
 
 extern DebuggerApp debuggerApp;

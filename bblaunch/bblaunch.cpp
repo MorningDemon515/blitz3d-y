@@ -5,7 +5,8 @@
 static const char* bb_err =
 "Error when creating BlitzIDE process. Please make sure ide.exe is inside the \"bin\" folder.";
 
-static std::string getAppDir() {
+static std::string getAppDir()
+{
 	char buffer[MAX_PATH];
 	std::string t = std::string(buffer, GetModuleFileName(NULL, buffer, MAX_PATH));
 	int n = t.find_last_of('\\');
@@ -13,12 +14,14 @@ static std::string getAppDir() {
 	return t;
 }
 
-static void fail(const char* p) {
+static void fail(const char* p)
+{
 	::MessageBox(0, p, "Blitz Error", MB_SETFOREGROUND | MB_TOPMOST | MB_ICONERROR);
 	ExitProcess(-1);
 }
 
-int WINAPI WinMain(_In_ HINSTANCE inst, _In_opt_ HINSTANCE prev, _In_ char* cmd, _In_ int show) {
+int WINAPI WinMain(_In_ HINSTANCE inst, _In_opt_ HINSTANCE prev, _In_ char* cmd, _In_ int show)
+{
 	std::string basedir = getAppDir();
 	std::string idePath = "\\bin\\ide.exe ";
 
@@ -33,7 +36,8 @@ int WINAPI WinMain(_In_ HINSTANCE inst, _In_opt_ HINSTANCE prev, _In_ char* cmd,
 	startupInfo.cb = sizeof(startupInfo);
 	ZeroMemory(&processInfo, sizeof(processInfo));
 
-	if(!CreateProcess(NULL, (char*)basedir.c_str(), NULL, NULL, FALSE, 0, NULL, NULL, &startupInfo, &processInfo)) {
+	if(!CreateProcess(NULL, (char*)basedir.c_str(), NULL, NULL, FALSE, 0, NULL, NULL, &startupInfo, &processInfo))
+	{
 		fail(bb_err);
 	}
 

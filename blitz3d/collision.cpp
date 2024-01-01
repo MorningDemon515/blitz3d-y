@@ -4,7 +4,8 @@
 
 const float COLLISION_EPSILON = .001f;
 
-bool Collision::update(const Line& line, float t, const Vector& n) {
+bool Collision::update(const Line& line, float t, const Vector& n)
+{
 	if(t > time) return false;
 	Plane p(line * t, n);
 	if(p.n.dot(line.d) >= 0) return false;
@@ -17,7 +18,8 @@ bool Collision::update(const Line& line, float t, const Vector& n) {
 
 extern gxRuntime* gx_runtime;
 
-bool Collision::sphereCollide(const Line& line, float radius, const Vector& dest, float dest_radius) {
+bool Collision::sphereCollide(const Line& line, float radius, const Vector& dest, float dest_radius)
+{
 
 	radius += dest_radius;
 	Line l(line.o - dest, line.d);
@@ -42,7 +44,8 @@ bool Collision::sphereCollide(const Line& line, float radius, const Vector& dest
 //v0,v1 = edge verts
 //pn = poly normal
 //en = edge normal
-static bool edgeTest(const Vector& v0, const Vector& v1, const Vector& pn, const Vector& en, const Line& line, float radius, Collision* curr_coll) {
+static bool edgeTest(const Vector& v0, const Vector& v1, const Vector& pn, const Vector& en, const Line& line, float radius, Collision* curr_coll)
+{
 
 	Matrix tm = ~Matrix(en, (v1 - v0).normalized(), pn);
 	Vector sv = tm * (line.o - v0), dv = tm * (line.o + line.d - v0);
@@ -61,10 +64,12 @@ static bool edgeTest(const Vector& v0, const Vector& v1, const Vector& pn, const
 	if(t > curr_coll->time) return false;	//intersects too far away
 	Vector i = l * t, p;
 	if(i.y > v0.distance(v1)) return false;	//intersection above cylinder
-	if(i.y >= 0) {
+	if(i.y >= 0)
+	{
 		p.y = i.y;
 	}
-	else {
+	else
+	{
 		//below bottom of cylinder...do sphere test...
 		a = l.d.dot(l.d);
 		if(!a) return false;				//ray parallel to sphere
@@ -82,7 +87,8 @@ static bool edgeTest(const Vector& v0, const Vector& v1, const Vector& pn, const
 	return curr_coll->update(line, t, (~tm * (i - p)).normalized());
 }
 
-bool Collision::triangleCollide(const Line& line, float radius, const Vector& v0, const Vector& v1, const Vector& v2) {
+bool Collision::triangleCollide(const Line& line, float radius, const Vector& v0, const Vector& v1, const Vector& v2)
+{
 
 	//triangle plane
 	Plane p(v0, v1, v2);
@@ -98,7 +104,8 @@ bool Collision::triangleCollide(const Line& line, float radius, const Vector& v0
 
 	//intersects triangle?
 	Vector i = line * t;
-	if(p0.distance(i) >= 0 && p1.distance(i) >= 0 && p2.distance(i) >= 0) {
+	if(p0.distance(i) >= 0 && p1.distance(i) >= 0 && p2.distance(i) >= 0)
+	{
 		return update(line, t, p.n);
 	}
 
@@ -110,7 +117,8 @@ bool Collision::triangleCollide(const Line& line, float radius, const Vector& v0
 		edgeTest(v2, v0, p.n, p2.n, line, radius, this);
 }
 
-bool Collision::boxCollide(const Line& line, float radius, const Box& box) {
+bool Collision::boxCollide(const Line& line, float radius, const Box& box)
+{
 
 	static int quads[] = {
 		2,3,1,0,
@@ -123,7 +131,8 @@ bool Collision::boxCollide(const Line& line, float radius, const Box& box) {
 
 	bool hit = false;
 
-	for(int n = 0; n < 24; n += 4) {
+	for(int n = 0; n < 24; n += 4)
+	{
 		Vector
 			v0(box.corner(quads[n])),
 			v1(box.corner(quads[n + 1])),
@@ -148,7 +157,8 @@ bool Collision::boxCollide(const Line& line, float radius, const Box& box) {
 
 		//intersects triangle?
 		Vector i = line * t;
-		if(p0.distance(i) >= 0 && p1.distance(i) >= 0 && p2.distance(i) >= 0 && p3.distance(i) >= 0) {
+		if(p0.distance(i) >= 0 && p1.distance(i) >= 0 && p2.distance(i) >= 0 && p3.distance(i) >= 0)
+		{
 			hit |= update(line, t, p.n);
 			continue;
 		}

@@ -8,8 +8,10 @@
 //////////////////////////////////
 // Cast an expression to a type //
 //////////////////////////////////
-ExprNode* ExprNode::castTo(Type* ty, Environ* e) {
-	if(!sem_type->canCastTo(ty)) {
+ExprNode* ExprNode::castTo(Type* ty, Environ* e)
+{
+	if(!sem_type->canCastTo(ty))
+	{
 		ex("Illegal type conversion (" + sem_type->name() + " -> " + ty->name() + ")");
 	}
 
@@ -17,12 +19,15 @@ ExprNode* ExprNode::castTo(Type* ty, Environ* e) {
 	return cast->semant(e);
 }
 
-ExprNode* CastNode::semant(Environ* e) {
-	if(!expr->sem_type) {
+ExprNode* CastNode::semant(Environ* e)
+{
+	if(!expr->sem_type)
+	{
 		expr = expr->semant(e);
 	}
 
-	if(ConstNode* c = expr->constNode()) {
+	if(ConstNode* c = expr->constNode())
+	{
 		ExprNode* e;
 		if(type == Type::int_type) e = d_new IntConstNode(c->intValue());
 		else if(type == Type::float_type) e = d_new FloatConstNode(c->floatValue());
@@ -39,33 +44,41 @@ ExprNode* CastNode::semant(Environ* e) {
 //////////////////////////////////
 // Cast an expression to a type //
 //////////////////////////////////
-TNode* CastNode::translate(Codegen* g) {
+TNode* CastNode::translate(Codegen* g)
+{
 	TNode* t = expr->translate(g);
-	if(expr->sem_type == Type::float_type && sem_type == Type::int_type) {
+	if(expr->sem_type == Type::float_type && sem_type == Type::int_type)
+	{
 		//float->int
 		return d_new TNode(IR_CAST, t, 0);
 	}
-	if(expr->sem_type == Type::int_type && sem_type == Type::float_type) {
+	if(expr->sem_type == Type::int_type && sem_type == Type::float_type)
+	{
 		//int->float
 		return d_new TNode(IR_FCAST, t, 0);
 	}
-	if(expr->sem_type == Type::string_type && sem_type == Type::int_type) {
+	if(expr->sem_type == Type::string_type && sem_type == Type::int_type)
+	{
 		//str->int
 		return call("__bbStrToInt", t);
 	}
-	if(expr->sem_type == Type::int_type && sem_type == Type::string_type) {
+	if(expr->sem_type == Type::int_type && sem_type == Type::string_type)
+	{
 		//int->str
 		return call("__bbStrFromInt", t);
 	}
-	if(expr->sem_type == Type::string_type && sem_type == Type::float_type) {
+	if(expr->sem_type == Type::string_type && sem_type == Type::float_type)
+	{
 		//str->float
 		return fcall("__bbStrToFloat", t);
 	}
-	if(expr->sem_type == Type::float_type && sem_type == Type::string_type) {
+	if(expr->sem_type == Type::float_type && sem_type == Type::string_type)
+	{
 		//float->str
 		return call("__bbStrFromFloat", t);
 	}
-	if(expr->sem_type->structType() && sem_type == Type::string_type) {
+	if(expr->sem_type->structType() && sem_type == Type::string_type)
+	{
 		//obj->str
 		return call("__bbObjToStr", t);
 	}
@@ -75,27 +88,35 @@ TNode* CastNode::translate(Codegen* g) {
 /////////////////////////////
 // Sequence of Expressions //
 /////////////////////////////
-void ExprSeqNode::semant(Environ* e) {
-	for(int k = 0; k < exprs.size(); ++k) {
+void ExprSeqNode::semant(Environ* e)
+{
+	for(int k = 0; k < exprs.size(); ++k)
+	{
 		if(exprs[k]) exprs[k] = exprs[k]->semant(e);
 	}
 }
 
-TNode* ExprSeqNode::translate(Codegen* g, bool cfunc) {
+TNode* ExprSeqNode::translate(Codegen* g, bool cfunc)
+{
 	TNode* t = 0, * l = 0;
-	for(int k = 0; k < exprs.size(); ++k) {
+	for(int k = 0; k < exprs.size(); ++k)
+	{
 
 		TNode* q = exprs[k]->translate(g);
 
-		if(cfunc) {
+		if(cfunc)
+		{
 			Type* ty = exprs[k]->sem_type;
-			if(ty->stringType()) {
+			if(ty->stringType())
+			{
 				q = call("__bbStrToCStr", q);
 			}
-			else if(ty->structType()) {
+			else if(ty->structType())
+			{
 				q = d_new TNode(IR_MEM, q);
 			}
-			else if(ty == Type::void_type) {
+			else if(ty == Type::void_type)
+			{
 				q = d_new TNode(IR_MEM, add(q, iconst(4)));
 			}
 		}
@@ -112,19 +133,26 @@ TNode* ExprSeqNode::translate(Codegen* g, bool cfunc) {
 	return t;
 }
 
-void ExprSeqNode::castTo(DeclSeq* decls, Environ* e, bool cfunc) {
+void ExprSeqNode::castTo(DeclSeq* decls, Environ* e, bool cfunc)
+{
 	if(exprs.size() > decls->size()) ex("Too many parameters");
-	for(int k = 0; k < decls->size(); ++k) {
+	for(int k = 0; k < decls->size(); ++k)
+	{
 		Decl* d = decls->decls[k];
-		if(k < exprs.size() && exprs[k]) {
+		if(k < exprs.size() && exprs[k])
+		{
 
-			if(cfunc && d->type->structType()) {
-				if(exprs[k]->sem_type->structType()) {
+			if(cfunc && d->type->structType())
+			{
+				if(exprs[k]->sem_type->structType())
+				{
 				}
-				else if(exprs[k]->sem_type->intType()) {
+				else if(exprs[k]->sem_type->intType())
+				{
 					exprs[k]->sem_type = Type::void_type;
 				}
-				else {
+				else
+				{
 					ex("Illegal type conversion (" + exprs[k]->sem_type->name() + " -> " + d->type->name() + ")");
 				}
 				continue;
@@ -133,7 +161,8 @@ void ExprSeqNode::castTo(DeclSeq* decls, Environ* e, bool cfunc) {
 			exprs[k] = exprs[k]->castTo(d->type, e);
 
 		}
-		else {
+		else
+		{
 			if(!d->defType) ex("Not enough parameters");
 			ExprNode* expr = constValue(d->defType);
 			if(k < exprs.size()) exprs[k] = expr;
@@ -142,8 +171,10 @@ void ExprSeqNode::castTo(DeclSeq* decls, Environ* e, bool cfunc) {
 	}
 }
 
-void ExprSeqNode::castTo(Type* t, Environ* e) {
-	for(int k = 0; k < exprs.size(); ++k) {
+void ExprSeqNode::castTo(Type* t, Environ* e)
+{
+	for(int k = 0; k < exprs.size(); ++k)
+	{
 		exprs[k] = exprs[k]->castTo(t, e);
 	}
 }
@@ -151,7 +182,8 @@ void ExprSeqNode::castTo(Type* t, Environ* e) {
 ///////////////////
 // Function call //
 ///////////////////
-ExprNode* CallNode::semant(Environ* e) {
+ExprNode* CallNode::semant(Environ* e)
+{
 	Type* t = e->findType(tag);
 	sem_decl = e->findFunc(ident);
 	if(!sem_decl || !(sem_decl->kind & DECL_FUNC)) ex("Function '" + ident + "' not found");
@@ -163,7 +195,8 @@ ExprNode* CallNode::semant(Environ* e) {
 	return this;
 }
 
-TNode* CallNode::translate(Codegen* g) {
+TNode* CallNode::translate(Codegen* g)
+{
 
 	FuncType* f = sem_decl->type->funcType();
 
@@ -171,20 +204,25 @@ TNode* CallNode::translate(Codegen* g) {
 	TNode* l = global("_f" + ident);
 	TNode* r = exprs->translate(g, f->cfunc);
 
-	if(f->userlib) {
+	if(f->userlib)
+	{
 		l = d_new TNode(IR_MEM, l);
 		usedfuncs.insert(ident);
 	}
 
-	if(sem_type == Type::float_type) {
+	if(sem_type == Type::float_type)
+	{
 		t = d_new TNode(IR_FCALL, l, r, exprs->size() * 4);
 	}
-	else {
+	else
+	{
 		t = d_new TNode(IR_CALL, l, r, exprs->size() * 4);
 	}
 
-	if(f->returnType->stringType()) {
-		if(f->cfunc) {
+	if(f->returnType->stringType())
+	{
+		if(f->cfunc)
+		{
 			t = call("__bbCStrToStr", t);
 		}
 	}
@@ -194,7 +232,8 @@ TNode* CallNode::translate(Codegen* g) {
 /////////////////////////
 // Variable expression //
 /////////////////////////
-ExprNode* VarExprNode::semant(Environ* e) {
+ExprNode* VarExprNode::semant(Environ* e)
+{
 	var->semant(e);
 	sem_type = var->sem_type;
 	ConstType* c = sem_type->constType();
@@ -203,55 +242,66 @@ ExprNode* VarExprNode::semant(Environ* e) {
 	delete this; return expr;
 }
 
-TNode* VarExprNode::translate(Codegen* g) {
+TNode* VarExprNode::translate(Codegen* g)
+{
 	return var->load(g);
 }
 
 //////////////////////
 // Integer constant //
 //////////////////////
-IntConstNode::IntConstNode(int n) :value(n) {
+IntConstNode::IntConstNode(int n) :value(n)
+{
 	sem_type = Type::int_type;
 }
 
-TNode* IntConstNode::translate(Codegen* g) {
+TNode* IntConstNode::translate(Codegen* g)
+{
 	return d_new TNode(IR_CONST, 0, 0, value);
 }
 
-int IntConstNode::intValue() {
+int IntConstNode::intValue()
+{
 	return value;
 }
 
-float IntConstNode::floatValue() {
+float IntConstNode::floatValue()
+{
 	return value;
 }
 
-std::string IntConstNode::stringValue() {
+std::string IntConstNode::stringValue()
+{
 	return itoa(value);
 }
 
 ///////////////////
 // Null constant //
 ///////////////////
-NullConstNode::NullConstNode() {
+NullConstNode::NullConstNode()
+{
 	sem_type = Type::null_type;
 }
 
-TNode* NullConstNode::translate(Codegen* g) {
+TNode* NullConstNode::translate(Codegen* g)
+{
 	return d_new TNode(IR_CONST, 0, 0, 0);
 }
 
-int NullConstNode::intValue() {
+int NullConstNode::intValue()
+{
 	ex("Can't convert null to int");
 	return 0;
 }
 
-float NullConstNode::floatValue() {
+float NullConstNode::floatValue()
+{
 	ex("Can't convert null to float");
 	return 0.f;
 }
 
-std::string NullConstNode::stringValue() {
+std::string NullConstNode::stringValue()
+{
 	ex("Can't convert null to string");
 	return std::string("");
 }
@@ -259,15 +309,18 @@ std::string NullConstNode::stringValue() {
 ////////////////////
 // Float constant //
 ////////////////////
-FloatConstNode::FloatConstNode(float f) :value(f) {
+FloatConstNode::FloatConstNode(float f) :value(f)
+{
 	sem_type = Type::float_type;
 }
 
-TNode* FloatConstNode::translate(Codegen* g) {
+TNode* FloatConstNode::translate(Codegen* g)
+{
 	return d_new TNode(IR_CONST, 0, 0, *(int*)&value);
 }
 
-int FloatConstNode::intValue() {
+int FloatConstNode::intValue()
+{
 	float flt = value;
 	int temp;
 	_control87(_RC_NEAR | _PC_24 | _EM_INVALID | _EM_ZERODIVIDE | _EM_OVERFLOW | _EM_UNDERFLOW | _EM_INEXACT | _EM_DENORMAL, 0xfffff);
@@ -279,50 +332,61 @@ int FloatConstNode::intValue() {
 	return temp;
 }
 
-float FloatConstNode::floatValue() {
+float FloatConstNode::floatValue()
+{
 	return value;
 }
 
-std::string FloatConstNode::stringValue() {
+std::string FloatConstNode::stringValue()
+{
 	return ftoa(value);
 }
 
 /////////////////////
 // String constant //
 /////////////////////
-StringConstNode::StringConstNode(const std::string& s) :value(s) {
+StringConstNode::StringConstNode(const std::string& s) :value(s)
+{
 	sem_type = Type::string_type;
 }
 
-TNode* StringConstNode::translate(Codegen* g) {
+TNode* StringConstNode::translate(Codegen* g)
+{
 	std::string lab = genLabel();
 	g->s_data(value, lab);
 	return call("__bbStrConst", global(lab));
 }
 
-int StringConstNode::intValue() {
+int StringConstNode::intValue()
+{
 	return atoi(value);
 }
 
-float StringConstNode::floatValue() {
+float StringConstNode::floatValue()
+{
 	return (float)atof(value);
 }
 
-std::string StringConstNode::stringValue() {
+std::string StringConstNode::stringValue()
+{
 	return value;
 }
 
 ////////////////////
 // Unary operator //
 ////////////////////
-ExprNode* UniExprNode::semant(Environ* e) {
+ExprNode* UniExprNode::semant(Environ* e)
+{
 	expr = expr->semant(e);
 	sem_type = expr->sem_type;
 	if(sem_type != Type::int_type && sem_type != Type::float_type) ex("Illegal operator for type");
-	if(ConstNode* c = expr->constNode()) {
+	if(ConstNode* c = expr->constNode())
+	{
 		ExprNode* e;
-		if(sem_type == Type::int_type) {
-			switch(op) {
+		if(sem_type == Type::int_type)
+		{
+			switch(op)
+			{
 				case '+':e = d_new IntConstNode(+c->intValue()); break;
 				case '-':e = d_new IntConstNode(-c->intValue()); break;
 				case ABS:e = d_new IntConstNode(abs(c->intValue())); break;
@@ -330,8 +394,10 @@ ExprNode* UniExprNode::semant(Environ* e) {
 				case POWTWO:e = d_new IntConstNode(c->intValue() * c->intValue()); break;
 			}
 		}
-		else {
-			switch(op) {
+		else
+		{
+			switch(op)
+			{
 				case '+':e = d_new FloatConstNode(+c->floatValue()); break;
 				case '-':e = d_new FloatConstNode(-c->floatValue()); break;
 				case ABS:e = d_new FloatConstNode(abs(c->floatValue())); break;
@@ -345,11 +411,14 @@ ExprNode* UniExprNode::semant(Environ* e) {
 	return this;
 }
 
-TNode* UniExprNode::translate(Codegen* g) {
+TNode* UniExprNode::translate(Codegen* g)
+{
 	int n = 0;
 	TNode* l = expr->translate(g);
-	if(sem_type == Type::int_type) {
-		switch(op) {
+	if(sem_type == Type::int_type)
+	{
+		switch(op)
+		{
 			case '+':return l;
 			case '-':n = IR_NEG; break;
 			case ABS:n = IR_ABS; break;
@@ -357,8 +426,10 @@ TNode* UniExprNode::translate(Codegen* g) {
 			case POWTWO:n = IR_POWTWO;
 		}
 	}
-	else {
-		switch(op) {
+	else
+	{
+		switch(op)
+		{
 			case '+':return l;
 			case '-':n = IR_FNEG; break;
 			case ABS:n = IR_FABS; break;
@@ -372,23 +443,29 @@ TNode* UniExprNode::translate(Codegen* g) {
 /////////////////////////////////////////////////////
 // boolean expression - accepts ints, returns ints //
 /////////////////////////////////////////////////////
-ExprNode* BinExprNode::semant(Environ* e) {
+ExprNode* BinExprNode::semant(Environ* e)
+{
 	lhs = lhs->semant(e); lhs = lhs->castTo(Type::int_type, e);
 	rhs = rhs->semant(e); rhs = rhs->castTo(Type::int_type, e);
 	ConstNode* lc = lhs->constNode(), * rc;
-	if(lc) {
-		switch(op) {
+	if(lc)
+	{
+		switch(op)
+		{
 			case AND:
-				if(lc->intValue()) { //Only evaluate right expression, if left expression is not false
+				if(lc->intValue())
+				{ //Only evaluate right expression, if left expression is not false
 					rc = rhs->constNode();
-					if(rc) {
+					if(rc)
+					{
 						ExprNode* expr;
 						expr = d_new IntConstNode(lc->intValue() & rc->intValue());
 						delete this;
 						return expr;
 					}
 				}
-				else { //If left expression is false, the whole expression must be false
+				else
+				{ //If left expression is false, the whole expression must be false
 					ExprNode* expr;
 					expr = d_new IntConstNode(lc->intValue());
 					delete this;
@@ -400,7 +477,8 @@ ExprNode* BinExprNode::semant(Environ* e) {
 				//implement logical OR with another keyword
 				//It is done ~ Salvage
 				rc = rhs->constNode();
-				if(rc) {
+				if(rc)
+				{
 					ExprNode* expr;
 					expr = d_new IntConstNode(lc->intValue() | rc->intValue());
 					delete this;
@@ -408,16 +486,19 @@ ExprNode* BinExprNode::semant(Environ* e) {
 				}
 				break;
 			case LOR:
-				if(lc->intValue()) { //Only evaluate right expression, if left expression is false
+				if(lc->intValue())
+				{ //Only evaluate right expression, if left expression is false
 					rc = rhs->constNode();
-					if(rc) {
+					if(rc)
+					{
 						ExprNode* expr;
 						expr = d_new IntConstNode(lc->intValue() || rc->intValue());
 						delete this;
 						return expr;
 					}
 				}
-				else { //If left expression is true, the whole expression must be true
+				else
+				{ //If left expression is true, the whole expression must be true
 					ExprNode* expr;
 					expr = d_new IntConstNode(1);
 					delete this;
@@ -426,7 +507,8 @@ ExprNode* BinExprNode::semant(Environ* e) {
 				break;
 			case XOR:
 				rc = rhs->constNode();
-				if(rc) {
+				if(rc)
+				{
 					ExprNode* expr;
 					expr = d_new IntConstNode(lc->intValue() ^ rc->intValue());
 					delete this;
@@ -435,7 +517,8 @@ ExprNode* BinExprNode::semant(Environ* e) {
 				break;
 			case SHL:
 				rc = rhs->constNode();
-				if(rc) {
+				if(rc)
+				{
 					ExprNode* expr;
 					expr = d_new IntConstNode(lc->intValue() << rc->intValue());
 					delete this;
@@ -444,7 +527,8 @@ ExprNode* BinExprNode::semant(Environ* e) {
 				break;
 			case SHR:
 				rc = rhs->constNode();
-				if(rc) {
+				if(rc)
+				{
 					ExprNode* expr;
 					expr = d_new IntConstNode((unsigned)lc->intValue() >> rc->intValue());
 					delete this;
@@ -453,7 +537,8 @@ ExprNode* BinExprNode::semant(Environ* e) {
 				break;
 			case SAR:
 				rc = rhs->constNode();
-				if(rc) {
+				if(rc)
+				{
 					ExprNode* expr;
 					expr = d_new IntConstNode(lc->intValue() >> rc->intValue());
 					delete this;
@@ -466,15 +551,16 @@ ExprNode* BinExprNode::semant(Environ* e) {
 	return this;
 }
 
-TNode* BinExprNode::translate(Codegen* g) {
+TNode* BinExprNode::translate(Codegen* g)
+{
 	TNode* l = lhs->translate(g);
 	TNode* r = rhs->translate(g);
 	int n = 0; std::string label;
-	switch(op) {
-		case AND:n = IR_AND; label = genLabel(); break;
-		case LOR:n = IR_LOR; label = genLabel(); break;
-		case OR:n = IR_OR; break; case XOR:n = IR_XOR; break;
-		case SHL:n = IR_SHL; break; case SHR:n = IR_SHR; break; case SAR:n = IR_SAR; break;
+	switch( op ){
+	case AND:n = IR_AND; label = genLabel(); break;
+	case LOR:n = IR_LOR; label = genLabel(); break;
+	case OR:n = IR_OR; break; case XOR:n = IR_XOR; break;
+	case SHL:n = IR_SHL; break; case SHR:n = IR_SHR; break; case SAR:n = IR_SAR;break;
 	}
 	return d_new TNode(n, l, r, label);
 }
@@ -482,40 +568,51 @@ TNode* BinExprNode::translate(Codegen* g) {
 ///////////////////////////
 // arithmetic expression //
 ///////////////////////////
-ExprNode* ArithExprNode::semant(Environ* e) {
+ExprNode* ArithExprNode::semant(Environ* e)
+{
 	lhs = lhs->semant(e);
 	rhs = rhs->semant(e);
-	if(lhs->sem_type->structType() || rhs->sem_type->structType()) {
+	if(lhs->sem_type->structType() || rhs->sem_type->structType())
+	{
 		ex("Arithmetic operator cannot be applied to custom type objects");
 	}
-	if(lhs->sem_type == Type::string_type || rhs->sem_type == Type::string_type) {
+	if(lhs->sem_type == Type::string_type || rhs->sem_type == Type::string_type)
+	{
 		//one side is a string - only + operator...
 		if(op != '+') ex("Operator cannot be applied to strings");
 		sem_type = Type::string_type;
 	}
-	else if(op == '^' || lhs->sem_type == Type::float_type || rhs->sem_type == Type::float_type) {
+	else if(op == '^' || lhs->sem_type == Type::float_type || rhs->sem_type == Type::float_type)
+	{
 		//It's ^, or one side is a float
 		sem_type = Type::float_type;
 	}
-	else {
+	else
+	{
 		//must be 2 ints
 		sem_type = Type::int_type;
 	}
 	lhs = lhs->castTo(sem_type, e);
 	rhs = rhs->castTo(sem_type, e);
 	ConstNode* lc = lhs->constNode(), * rc = rhs->constNode();
-	if(rc && (op == '/' || op == MOD)) {
-		if((sem_type == Type::int_type && !rc->intValue()) || (sem_type == Type::float_type && !rc->floatValue())) {
+	if(rc && (op == '/' || op == MOD))
+	{
+		if((sem_type == Type::int_type && !rc->intValue()) || (sem_type == Type::float_type && !rc->floatValue()))
+		{
 			ex("Division by zero.");
 		}
 	}
-	if(lc && rc) {
+	if(lc && rc)
+	{
 		ExprNode* expr;
-		if(sem_type == Type::string_type) {
+		if(sem_type == Type::string_type)
+		{
 			expr = d_new StringConstNode(lc->stringValue() + rc->stringValue());
 		}
-		else if(sem_type == Type::int_type) {
-			switch(op) {
+		else if(sem_type == Type::int_type)
+		{
+			switch(op)
+			{
 				case '+':expr = d_new IntConstNode(lc->intValue() + rc->intValue()); break;
 				case '-':expr = d_new IntConstNode(lc->intValue() - rc->intValue()); break;
 				case '*':expr = d_new IntConstNode(lc->intValue() * rc->intValue()); break;
@@ -523,8 +620,10 @@ ExprNode* ArithExprNode::semant(Environ* e) {
 				case MOD:expr = d_new IntConstNode(lc->intValue() % rc->intValue()); break;
 			}
 		}
-		else {
-			switch(op) {
+		else
+		{
+			switch(op)
+			{
 				case '+':expr = d_new FloatConstNode(lc->floatValue() + rc->floatValue()); break;
 				case '-':expr = d_new FloatConstNode(lc->floatValue() - rc->floatValue()); break;
 				case '*':expr = d_new FloatConstNode(lc->floatValue() * rc->floatValue()); break;
@@ -539,22 +638,28 @@ ExprNode* ArithExprNode::semant(Environ* e) {
 	return this;
 }
 
-TNode* ArithExprNode::translate(Codegen* g) {
+TNode* ArithExprNode::translate(Codegen* g)
+{
 	TNode* l = lhs->translate(g);
 	TNode* r = rhs->translate(g);
-	if(sem_type == Type::string_type) {
+	if(sem_type == Type::string_type)
+	{
 		return call("__bbStrConcat", l, r);
 	}
 	int n = 0;
-	if(sem_type == Type::int_type) {
-		switch(op) {
+	if(sem_type == Type::int_type)
+	{
+		switch(op)
+		{
 			case '+':n = IR_ADD; break; case '-':n = IR_SUB; break;
 			case '*':n = IR_MUL; break; case '/':n = IR_DIV; break;
 			case MOD:n = IR_MOD; break;
 		}
 	}
-	else {
-		switch(op) {
+	else
+	{
+		switch(op)
+		{
 			case '+':n = IR_FADD; break; case '-':n = IR_FSUB; break;
 			case '*':n = IR_FMUL; break; case '/':n = IR_FDIV; break;
 			case MOD:return fcall("__bbFMod", l, r);
@@ -567,30 +672,38 @@ TNode* ArithExprNode::translate(Codegen* g) {
 /////////////////////////
 // relation expression //
 /////////////////////////
-ExprNode* RelExprNode::semant(Environ* e) {
+ExprNode* RelExprNode::semant(Environ* e)
+{
 	lhs = lhs->semant(e);
 	rhs = rhs->semant(e);
-	if(lhs->sem_type->structType() || rhs->sem_type->structType()) {
+	if(lhs->sem_type->structType() || rhs->sem_type->structType())
+	{
 		if(op != '=' && op != NE) ex("Illegal operator for custom type objects");
 		opType = lhs->sem_type != Type::null_type ? lhs->sem_type : rhs->sem_type;
 	}
-	else if(lhs->sem_type == Type::string_type || rhs->sem_type == Type::string_type) {
+	else if(lhs->sem_type == Type::string_type || rhs->sem_type == Type::string_type)
+	{
 		opType = Type::string_type;
 	}
-	else if(lhs->sem_type == Type::float_type || rhs->sem_type == Type::float_type) {
+	else if(lhs->sem_type == Type::float_type || rhs->sem_type == Type::float_type)
+	{
 		opType = Type::float_type;
 	}
-	else {
+	else
+	{
 		opType = Type::int_type;
 	}
 	sem_type = Type::int_type;
 	lhs = lhs->castTo(opType, e);
 	rhs = rhs->castTo(opType, e);
 	ConstNode* lc = lhs->constNode(), * rc = rhs->constNode();
-	if(lc && rc) {
+	if(lc && rc)
+	{
 		ExprNode* expr;
-		if(opType == Type::string_type) {
-			switch(op) {
+		if(opType == Type::string_type)
+		{
+			switch(op)
+			{
 				case '<':expr = d_new IntConstNode(lc->stringValue() < rc->stringValue()); break;
 				case '=':expr = d_new IntConstNode(lc->stringValue() == rc->stringValue()); break;
 				case '>':expr = d_new IntConstNode(lc->stringValue() > rc->stringValue()); break;
@@ -599,8 +712,10 @@ ExprNode* RelExprNode::semant(Environ* e) {
 				case GE: expr = d_new IntConstNode(lc->stringValue() >= rc->stringValue()); break;
 			}
 		}
-		else if(opType == Type::float_type) {
-			switch(op) {
+		else if(opType == Type::float_type)
+		{
+			switch(op)
+			{
 				case '<':expr = d_new IntConstNode(lc->floatValue() < rc->floatValue()); break;
 				case '=':expr = d_new IntConstNode(lc->floatValue() == rc->floatValue()); break;
 				case '>':expr = d_new IntConstNode(lc->floatValue() > rc->floatValue()); break;
@@ -609,8 +724,10 @@ ExprNode* RelExprNode::semant(Environ* e) {
 				case GE: expr = d_new IntConstNode(lc->floatValue() >= rc->floatValue()); break;
 			}
 		}
-		else {
-			switch(op) {
+		else
+		{
+			switch(op)
+			{
 				case '<':expr = d_new IntConstNode(lc->intValue() < rc->intValue()); break;
 				case '=':expr = d_new IntConstNode(lc->intValue() == rc->intValue()); break;
 				case '>':expr = d_new IntConstNode(lc->intValue() > rc->intValue()); break;
@@ -625,7 +742,8 @@ ExprNode* RelExprNode::semant(Environ* e) {
 	return this;
 }
 
-TNode* RelExprNode::translate(Codegen* g) {
+TNode* RelExprNode::translate(Codegen* g)
+{
 	TNode* l = lhs->translate(g);
 	TNode* r = rhs->translate(g);
 	return compare(op, l, r, opType);
@@ -634,47 +752,54 @@ TNode* RelExprNode::translate(Codegen* g) {
 ////////////////////
 // New expression //
 ////////////////////
-ExprNode* NewNode::semant(Environ* e) {
+ExprNode* NewNode::semant(Environ* e)
+{
 	sem_type = e->findType(ident);
 	if(!sem_type) ex("custom type name not found");
 	if(sem_type->structType() == 0) ex("type is not a custom type");
 	return this;
 }
 
-TNode* NewNode::translate(Codegen* g) {
+TNode* NewNode::translate(Codegen* g)
+{
 	return call("__bbObjNew", global("_t" + ident));
 }
 
 ////////////////////
 // First of class //
 ////////////////////
-ExprNode* FirstNode::semant(Environ* e) {
+ExprNode* FirstNode::semant(Environ* e)
+{
 	sem_type = e->findType(ident);
 	if(!sem_type) ex("custom type name name not found");
 	return this;
 }
 
-TNode* FirstNode::translate(Codegen* g) {
+TNode* FirstNode::translate(Codegen* g)
+{
 	return call("__bbObjFirst", global("_t" + ident));
 }
 
 ///////////////////
 // Last of class //
 ///////////////////
-ExprNode* LastNode::semant(Environ* e) {
+ExprNode* LastNode::semant(Environ* e)
+{
 	sem_type = e->findType(ident);
 	if(!sem_type) ex("custom type name not found");
 	return this;
 }
 
-TNode* LastNode::translate(Codegen* g) {
+TNode* LastNode::translate(Codegen* g)
+{
 	return call("__bbObjLast", global("_t" + ident));
 }
 
 ////////////////////
 // Next of object //
 ////////////////////
-ExprNode* AfterNode::semant(Environ* e) {
+ExprNode* AfterNode::semant(Environ* e)
+{
 	expr = expr->semant(e);
 	if(expr->sem_type == Type::null_type) ex("'After' cannot be used on 'Null'");
 	if(expr->sem_type->structType() == 0) ex("'After' must be used with a custom type object");
@@ -682,7 +807,8 @@ ExprNode* AfterNode::semant(Environ* e) {
 	return this;
 }
 
-TNode* AfterNode::translate(Codegen* g) {
+TNode* AfterNode::translate(Codegen* g)
+{
 	TNode* t = expr->translate(g);
 	if(g->debug) t = jumpf(t, "__bbNullObjEx");
 	return call("__bbObjNext", t);
@@ -691,7 +817,8 @@ TNode* AfterNode::translate(Codegen* g) {
 ////////////////////
 // Prev of object //
 ////////////////////
-ExprNode* BeforeNode::semant(Environ* e) {
+ExprNode* BeforeNode::semant(Environ* e)
+{
 	expr = expr->semant(e);
 	if(expr->sem_type == Type::null_type) ex("'Before' cannot be used with 'Null'");
 	if(expr->sem_type->structType() == 0) ex("'Before' must be used with a custom type object");
@@ -699,7 +826,8 @@ ExprNode* BeforeNode::semant(Environ* e) {
 	return this;
 }
 
-TNode* BeforeNode::translate(Codegen* g) {
+TNode* BeforeNode::translate(Codegen* g)
+{
 	TNode* t = expr->translate(g);
 	if(g->debug) t = jumpf(t, "__bbNullObjEx");
 	return call("__bbObjPrev", t);
@@ -708,7 +836,8 @@ TNode* BeforeNode::translate(Codegen* g) {
 /////////////////
 // Object cast //
 /////////////////
-ExprNode* ObjectCastNode::semant(Environ* e) {
+ExprNode* ObjectCastNode::semant(Environ* e)
+{
 	expr = expr->semant(e);
 	expr = expr->castTo(Type::int_type, e);
 	sem_type = e->findType(type_ident);
@@ -717,7 +846,8 @@ ExprNode* ObjectCastNode::semant(Environ* e) {
 	return this;
 }
 
-TNode* ObjectCastNode::translate(Codegen* g) {
+TNode* ObjectCastNode::translate(Codegen* g)
+{
 	TNode* t = expr->translate(g);
 	t = call("__bbObjFromHandle", t, global("_t" + sem_type->structType()->ident));
 	return t;
@@ -726,14 +856,16 @@ TNode* ObjectCastNode::translate(Codegen* g) {
 ///////////////////
 // Object Handle //
 ///////////////////
-ExprNode* ObjectHandleNode::semant(Environ* e) {
+ExprNode* ObjectHandleNode::semant(Environ* e)
+{
 	expr = expr->semant(e);
 	if(!expr->sem_type->structType()) ex("'ObjectHandle' must be used with an object");
 	sem_type = Type::int_type;
 	return this;
 }
 
-TNode* ObjectHandleNode::translate(Codegen* g) {
+TNode* ObjectHandleNode::translate(Codegen* g)
+{
 	TNode* t = expr->translate(g);
 	return call("__bbObjToHandle", t);
 }
